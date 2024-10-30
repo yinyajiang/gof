@@ -7,7 +7,7 @@ type AuthInfo struct {
 	Cookie    string
 }
 
-type VideoMPDInfo struct {
+type MPDInfo struct {
 	MPDURL    string
 	Policy    string
 	Signature string

@@ -10,7 +10,7 @@ import (
 	"github.com/yinyajiang/gof/common"
 )
 
-func AddMPDHeaders(req *http.Request, authInfo gof.AuthInfo, mpdInfo gof.VideoMPDInfo) {
+func AddMPDHeaders(req *http.Request, authInfo gof.AuthInfo, mpdInfo gof.MPDInfo) {
 	common.AddHeaders(req, nil, map[string]string{
 		"User-Agent": authInfo.UserAgent,
 		"Accept":     "*/*",
@@ -24,7 +24,7 @@ func AddMPDHeaders(req *http.Request, authInfo gof.AuthInfo, mpdInfo gof.VideoMP
 	})
 }
 
-func OFApiMPDGet(authInfo gof.AuthInfo, mpdInfo gof.VideoMPDInfo) (body []byte, err error) {
+func OFApiMPDGet(authInfo gof.AuthInfo, mpdInfo gof.MPDInfo) (body []byte, err error) {
 	resp, err := OFApiMPDGetResp(authInfo, mpdInfo)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func OFApiMPDGet(authInfo gof.AuthInfo, mpdInfo gof.VideoMPDInfo) (body []byte, 
 	return io.ReadAll(resp.Body)
 }
 
-func OFApiMPDGetHeader(authInfo gof.AuthInfo, mpdInfo gof.VideoMPDInfo) (header http.Header, err error) {
+func OFApiMPDGetHeader(authInfo gof.AuthInfo, mpdInfo gof.MPDInfo) (header http.Header, err error) {
 	resp, err := OFApiMPDGetResp(authInfo, mpdInfo)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func OFApiMPDGetHeader(authInfo gof.AuthInfo, mpdInfo gof.VideoMPDInfo) (header 
 	return resp.Header, nil
 }
 
-func OFApiMPDGetResp(authInfo gof.AuthInfo, mpdInfo gof.VideoMPDInfo) (resp *http.Response, err error) {
+func OFApiMPDGetResp(authInfo gof.AuthInfo, mpdInfo gof.MPDInfo) (resp *http.Response, err error) {
 	client := HttpClient()
 	req, err := http.NewRequest("GET", mpdInfo.MPDURL, nil)
 	if err != nil {

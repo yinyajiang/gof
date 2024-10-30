@@ -120,7 +120,7 @@ func (c *OFDRM) GetVideoDecryptedKeyByServer(dashVideoURL string) (string, error
 	return "", fmt.Errorf("all servers failed")
 }
 
-func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof.VideoMPDInfo) (string, error) {
+func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof.MPDInfo) (string, error) {
 	data := common.MustMarshalJSON(map[string]string{
 		"PSSH":        pssh,
 		"License URL": ofapi.ApiURL(c.drmURLPath(mpdInfo)),
@@ -164,11 +164,11 @@ func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof
 	return strings.TrimSpace(msg.(string)), nil
 }
 
-func (c *OFDRM) drmURLPath(mpdInfo gof.VideoMPDInfo) string {
+func (c *OFDRM) drmURLPath(mpdInfo gof.MPDInfo) string {
 	return ofapi.ApiURLPath("/users/media/%s/drm/post/%s?type=widevine", mpdInfo.MediaID, mpdInfo.PostID)
 }
 
-func (c *OFDRM) getDRMPSSH(mpdInfo gof.VideoMPDInfo) (string, error) {
+func (c *OFDRM) getDRMPSSH(mpdInfo gof.MPDInfo) (string, error) {
 	data, err := ofapi.OFApiMPDGet(c.cfg.AuthInfo, mpdInfo)
 	if err != nil {
 		return "", err

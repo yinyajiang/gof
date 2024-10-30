@@ -16,10 +16,10 @@ func MustMarshalJSON(v any) []byte {
 	return b
 }
 
-func ParseVideoMPDInfo(dashVideoURL string) (gof.VideoMPDInfo, error) {
+func ParseVideoMPDInfo(dashVideoURL string) (gof.MPDInfo, error) {
 	split := strings.Split(dashVideoURL, ",")
 	if len(split) != 6 {
-		return gof.VideoMPDInfo{}, fmt.Errorf("invalid video URL format: %s", dashVideoURL)
+		return gof.MPDInfo{}, fmt.Errorf("invalid video URL format: %s", dashVideoURL)
 	}
 	mpdurl := split[0]
 	policy := split[1]
@@ -27,7 +27,7 @@ func ParseVideoMPDInfo(dashVideoURL string) (gof.VideoMPDInfo, error) {
 	keyPairID := split[3]
 	mediaid := split[4]
 	postid := split[5]
-	return gof.VideoMPDInfo{
+	return gof.MPDInfo{
 		MPDURL:    mpdurl,
 		Policy:    policy,
 		Signature: signature,
