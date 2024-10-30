@@ -1,4 +1,4 @@
-package cdm
+package ofdrm
 
 import (
 	"bytes"
@@ -19,11 +19,11 @@ import (
 	"github.com/yinyajiang/gof/common"
 )
 
-type OFCDM struct {
-	cfg OFCDMConfig
+type OFDRM struct {
+	cfg OFDRMConfig
 }
 
-type OFCDMConfig struct {
+type OFDRMConfig struct {
 	AuthInfo          gof.AuthInfo
 	Rules             Rules
 	ClientID          []byte
@@ -31,14 +31,14 @@ type OFCDMConfig struct {
 	CDRMProjectServer []string
 }
 
-func NewOFCDM(config OFCDMConfig) *OFCDM {
+func NewOFDRM(config OFDRMConfig) *OFDRM {
 	if config.AuthInfo.Cookie == "" || config.AuthInfo.X_BC == "" || config.AuthInfo.UserAgent == "" {
 		panic("AuthInfo is not set")
 	}
-	return &OFCDM{cfg: config}
+	return &OFDRM{cfg: config}
 }
 
-func (c *OFCDM) GetVideoDecryptedKeyAuto(dashVideoURL string) (string, error) {
+func (c *OFDRM) GetVideoDecryptedKeyAuto(dashVideoURL string) (string, error) {
 	useClient := len(c.cfg.ClientID) != 0 && len(c.cfg.ClientPrivateKey) != 0
 	useServer := len(c.cfg.CDRMProjectServer) != 0
 
@@ -58,7 +58,7 @@ func (c *OFCDM) GetVideoDecryptedKeyAuto(dashVideoURL string) (string, error) {
 	return "", nil
 }
 
-func (c *OFCDM) GetVideoDecryptedKeyByClient(dashVideoURL string) (string, error) {
+func (c *OFDRM) GetVideoDecryptedKeyByClient(dashVideoURL string) (string, error) {
 	mpdInfo, err := common.ParseVideoMPDInfo(dashVideoURL)
 	if err != nil {
 		return "", err
@@ -68,7 +68,7 @@ func (c *OFCDM) GetVideoDecryptedKeyByClient(dashVideoURL string) (string, error
 		return "", err
 	}
 
-	keys, err := c.getCDMKeys(c.urlPath(mpdInfo), pssh)
+	keys, err := c.getWidevineKeys(c.urlPath(mpdInfo), pssh)
 	if err != nil {
 		return "", err
 	}
@@ -78,7 +78,7 @@ func (c *OFCDM) GetVideoDecryptedKeyByClient(dashVideoURL string) (string, error
 	return decryptedKey, nil
 }
 
-func (c *OFCDM) GetVideoLastModified(dashVideoURL string) (time.Time, error) {
+func (c *OFDRM) GetVideoLastModified(dashVideoURL string) (time.Time, error) {
 	mpdInfo, err := common.ParseVideoMPDInfo(dashVideoURL)
 	if err != nil {
 		return time.Time{}, err
@@ -109,7 +109,7 @@ func (c *OFCDM) GetVideoLastModified(dashVideoURL string) (time.Time, error) {
 	return lastModifiedTime.Local(), nil
 }
 
-func (c *OFCDM) GetVideoDecryptedKeyByServer(dashVideoURL string) (string, error) {
+func (c *OFDRM) GetVideoDecryptedKeyByServer(dashVideoURL string) (string, error) {
 	mpdInfo, err := common.ParseVideoMPDInfo(dashVideoURL)
 	if err != nil {
 		return "", err
@@ -130,7 +130,7 @@ func (c *OFCDM) GetVideoDecryptedKeyByServer(dashVideoURL string) (string, error
 	return "", fmt.Errorf("all servers failed")
 }
 
-func (c *OFCDM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof.VideoMPDInfo) (string, error) {
+func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof.VideoMPDInfo) (string, error) {
 	data := common.MustMarshalJSON(map[string]string{
 		"PSSH":        pssh,
 		"License URL": c.licenseURL(c.urlPath(mpdInfo)),
@@ -174,14 +174,14 @@ func (c *OFCDM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof
 	return strings.TrimSpace(msg.(string)), nil
 }
 
-func (c *OFCDM) licenseURL(urlpath string) string {
+func (c *OFDRM) licenseURL(urlpath string) string {
 	if !strings.HasPrefix(urlpath, "/") {
 		panic("urlpath must start with / : " + urlpath)
 	}
 	return "https://onlyfans.com" + urlpath
 }
 
-func (c *OFCDM) addCloudFrontHeaders(req *http.Request, mpdInfo gof.VideoMPDInfo) {
+func (c *OFDRM) addCloudFrontHeaders(req *http.Request, mpdInfo gof.VideoMPDInfo) {
 	common.AddHeaders(req, nil, map[string]string{
 		"User-Agent": c.cfg.AuthInfo.UserAgent,
 		"Accept":     "*/*",
@@ -195,19 +195,19 @@ func (c *OFCDM) addCloudFrontHeaders(req *http.Request, mpdInfo gof.VideoMPDInfo
 	})
 }
 
-func (c *OFCDM) drmHeaders(urlpath string) map[string]string {
+func (c *OFDRM) drmHeaders(urlpath string) map[string]string {
 	return GenAuthHeader(urlpath, c.cfg.AuthInfo, c.cfg.Rules)
 }
 
-func (c *OFCDM) addDRMHeaders(req *http.Request, urlpath string) {
+func (c *OFDRM) addDRMHeaders(req *http.Request, urlpath string) {
 	common.AddHeaders(req, c.drmHeaders(urlpath), nil)
 }
 
-func (c *OFCDM) urlPath(mpdInfo gof.VideoMPDInfo) string {
+func (c *OFDRM) urlPath(mpdInfo gof.VideoMPDInfo) string {
 	return fmt.Sprintf("/api2/v2/users/media/%s/drm/post/%s?type=widevine", mpdInfo.MediaID, mpdInfo.PostID)
 }
 
-func (c *OFCDM) getDRMPSSH(mpdInfo gof.VideoMPDInfo) (string, error) {
+func (c *OFDRM) getDRMPSSH(mpdInfo gof.VideoMPDInfo) (string, error) {
 	client := common.HttpClient()
 	req, err := http.NewRequest("GET", mpdInfo.MPDURL, nil)
 	if err != nil {
@@ -236,7 +236,7 @@ func (c *OFCDM) getDRMPSSH(mpdInfo gof.VideoMPDInfo) (string, error) {
 	return pssh, nil
 }
 
-func (c *OFCDM) getCDMKeys(urlpath, pssh string) ([]*widevine.Key, error) {
+func (c *OFDRM) getWidevineKeys(urlpath, pssh string) ([]*widevine.Key, error) {
 	device, err := widevine.NewDevice(
 		widevine.FromRaw(c.cfg.ClientID, c.cfg.ClientPrivateKey),
 	)
@@ -255,7 +255,7 @@ func (c *OFCDM) getCDMKeys(urlpath, pssh string) ([]*widevine.Key, error) {
 		return nil, fmt.Errorf("parse pssh: %w", err)
 	}
 
-	cert, err := c.loadDRMServiceCert(urlpath)
+	cert, err := c.loadWidevineServiceCert(urlpath)
 	if err != nil {
 		return nil, fmt.Errorf("get service cert: %w", err)
 	}
@@ -301,7 +301,7 @@ func (c *OFCDM) getCDMKeys(urlpath, pssh string) ([]*widevine.Key, error) {
 	return keys, nil
 }
 
-func (c *OFCDM) loadDRMServiceCert(urlpath string) (*widevinepb.DrmCertificate, error) {
+func (c *OFDRM) loadWidevineServiceCert(urlpath string) (*widevinepb.DrmCertificate, error) {
 	client := common.HttpClient()
 	req, err := http.NewRequest("POST", c.licenseURL(urlpath), io.NopCloser(bytes.NewReader(widevine.ServiceCertificateRequest)))
 	if err != nil {

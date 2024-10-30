@@ -1,4 +1,4 @@
-package cdm
+package ofdrm
 
 type Rules struct {
 	AppToken         string `json:"app-token"`

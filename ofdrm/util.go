@@ -1,4 +1,4 @@
-package cdm
+package ofdrm
 
 import (
 	"crypto/sha1"
