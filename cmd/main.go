@@ -25,15 +25,15 @@ func main() {
 		},
 	}
 
-	ofapi := ofapi.NewOFAPI(ofapi.OFApiConfig{
+	api := ofapi.NewOFAPI(ofapi.OFApiConfig{
 		AuthInfo: authInfo,
 		Rules:    rules,
 	})
-	user, err := ofapi.GetMeUserInfo()
+	subs, err := api.GetSubscriptions(ofapi.SubscritionTypeActive)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(user)
+	fmt.Println(subs)
 
 	// clientID, err := os.ReadFile("/Volumes/1T 移动硬盘/Downloads/device_client_id_blob (1)")
 	// if err != nil {

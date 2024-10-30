@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -69,6 +70,14 @@ func OFApiAuthGet[P Params](urlpath string, params P, auth gof.AuthInfo, rules g
 		return nil, fmt.Errorf("failed to get data: %s, urlpath: %s", resp.Status, urlpath)
 	}
 	return io.ReadAll(resp.Body)
+}
+
+func OFApiAuthGetUnmashel[P Params](urlpath string, params P, auth gof.AuthInfo, rules gof.Rules, pointer any) (err error) {
+	data, err := OFApiAuthGet(urlpath, params, auth, rules)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, pointer)
 }
 
 type Params interface {
