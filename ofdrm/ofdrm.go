@@ -17,6 +17,7 @@ import (
 	"github.com/iyear/gowidevine/widevinepb"
 	"github.com/yinyajiang/gof"
 	"github.com/yinyajiang/gof/common"
+	"github.com/yinyajiang/gof/ofapi"
 )
 
 type OFDRM struct {
@@ -25,7 +26,7 @@ type OFDRM struct {
 
 type OFDRMConfig struct {
 	AuthInfo          gof.AuthInfo
-	Rules             Rules
+	Rules             gof.Rules
 	ClientID          []byte
 	ClientPrivateKey  []byte
 	CDRMProjectServer []string
@@ -68,7 +69,7 @@ func (c *OFDRM) GetVideoDecryptedKeyByClient(dashVideoURL string) (string, error
 		return "", err
 	}
 
-	keys, err := c.getWidevineKeys(c.urlPath(mpdInfo), pssh)
+	keys, err := c.getWidevineKeys(c.drmURLPath(mpdInfo), pssh)
 	if err != nil {
 		return "", err
 	}
@@ -83,22 +84,11 @@ func (c *OFDRM) GetVideoLastModified(dashVideoURL string) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
-
-	client := common.HttpClient()
-	req, err := http.NewRequest("GET", mpdInfo.MPDURL, nil)
+	header, err := ofapi.OFApiMPDGetHeader(c.cfg.AuthInfo, mpdInfo)
 	if err != nil {
 		return time.Time{}, err
 	}
-	c.addCloudFrontHeaders(req, mpdInfo)
-	resp, err := client.Do(req)
-	if err != nil {
-		return time.Time{}, err
-	}
-	defer resp.Body.Close()
-	if !common.IsSuccessfulStatusCode(resp.StatusCode) {
-		return time.Time{}, fmt.Errorf("failed to get last modified: %s", resp.Status)
-	}
-	lastModified := resp.Header.Get("Last-Modified")
+	lastModified := header.Get("Last-Modified")
 	if lastModified == "" {
 		return time.Now(), nil
 	}
@@ -133,14 +123,14 @@ func (c *OFDRM) GetVideoDecryptedKeyByServer(dashVideoURL string) (string, error
 func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof.VideoMPDInfo) (string, error) {
 	data := common.MustMarshalJSON(map[string]string{
 		"PSSH":        pssh,
-		"License URL": c.licenseURL(c.urlPath(mpdInfo)),
-		"Headers":     string(common.MustMarshalJSON(c.drmHeaders(c.urlPath(mpdInfo)))),
+		"License URL": ofapi.ApiURL(c.drmURLPath(mpdInfo)),
+		"Headers":     string(common.MustMarshalJSON(ofapi.AuthHeaders(c.drmURLPath(mpdInfo), c.cfg.AuthInfo, c.cfg.Rules))),
 		"JSON":        "",
 		"Cookies":     "",
 		"Data":        "",
 		"Proxy":       "",
 	})
-	client := common.HttpClient()
+	client := ofapi.HttpClient()
 	req, err := http.NewRequest("POST", serverURL, io.NopCloser(bytes.NewReader(data)))
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)
@@ -174,57 +164,16 @@ func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof
 	return strings.TrimSpace(msg.(string)), nil
 }
 
-func (c *OFDRM) licenseURL(urlpath string) string {
-	if !strings.HasPrefix(urlpath, "/") {
-		panic("urlpath must start with / : " + urlpath)
-	}
-	return "https://onlyfans.com" + urlpath
-}
-
-func (c *OFDRM) addCloudFrontHeaders(req *http.Request, mpdInfo gof.VideoMPDInfo) {
-	common.AddHeaders(req, nil, map[string]string{
-		"User-Agent": c.cfg.AuthInfo.UserAgent,
-		"Accept":     "*/*",
-		"X-BC":       c.cfg.AuthInfo.X_BC,
-		"Cookie": fmt.Sprintf("CloudFront-Policy=%s; CloudFront-Signature=%s; CloudFront-Key-Pair-Id=%s; %s;",
-			mpdInfo.Policy,
-			mpdInfo.Signature,
-			mpdInfo.KeyPairID,
-			strings.TrimPrefix(c.cfg.AuthInfo.Cookie, ";"),
-		),
-	})
-}
-
-func (c *OFDRM) drmHeaders(urlpath string) map[string]string {
-	return GenAuthHeader(urlpath, c.cfg.AuthInfo, c.cfg.Rules)
-}
-
-func (c *OFDRM) addDRMHeaders(req *http.Request, urlpath string) {
-	common.AddHeaders(req, c.drmHeaders(urlpath), nil)
-}
-
-func (c *OFDRM) urlPath(mpdInfo gof.VideoMPDInfo) string {
-	return fmt.Sprintf("/api2/v2/users/media/%s/drm/post/%s?type=widevine", mpdInfo.MediaID, mpdInfo.PostID)
+func (c *OFDRM) drmURLPath(mpdInfo gof.VideoMPDInfo) string {
+	return ofapi.ApiURLPath("/users/media/%s/drm/post/%s?type=widevine", mpdInfo.MediaID, mpdInfo.PostID)
 }
 
 func (c *OFDRM) getDRMPSSH(mpdInfo gof.VideoMPDInfo) (string, error) {
-	client := common.HttpClient()
-	req, err := http.NewRequest("GET", mpdInfo.MPDURL, nil)
+	data, err := ofapi.OFApiMPDGet(c.cfg.AuthInfo, mpdInfo)
 	if err != nil {
 		return "", err
 	}
-	c.addCloudFrontHeaders(req, mpdInfo)
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if !common.IsSuccessfulStatusCode(resp.StatusCode) {
-		return "", fmt.Errorf("failed to get pssh: %s", resp.Status)
-	}
-	defer resp.Body.Close()
-
-	doc, err := xmlquery.Parse(resp.Body)
+	doc, err := xmlquery.Parse(bytes.NewReader(data))
 	if err != nil {
 		return "", err
 	}
@@ -263,26 +212,10 @@ func (c *OFDRM) getWidevineKeys(urlpath, pssh string) ([]*widevine.Key, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get license challenge: %w", err)
 	}
-
-	client := common.HttpClient()
-	req, err := http.NewRequest("POST", c.licenseURL(urlpath), io.NopCloser(bytes.NewReader(challenge)))
+	license, err := ofapi.OFApiAuthPost(urlpath, "", c.cfg.AuthInfo, c.cfg.Rules, challenge)
 	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
+		return nil, err
 	}
-	c.addDRMHeaders(req, urlpath)
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request license: %w", err)
-	}
-	defer resp.Body.Close()
-	if !common.IsSuccessfulStatusCode(resp.StatusCode) {
-		return nil, fmt.Errorf("failed to get license: %s", resp.Status)
-	}
-	license, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read resp: %w", err)
-	}
-
 	keys, err := parseLicenseFunc(license)
 	if err != nil {
 		return nil, fmt.Errorf("parse license: %w", err)
@@ -302,24 +235,9 @@ func (c *OFDRM) getWidevineKeys(urlpath, pssh string) ([]*widevine.Key, error) {
 }
 
 func (c *OFDRM) loadWidevineServiceCert(urlpath string) (*widevinepb.DrmCertificate, error) {
-	client := common.HttpClient()
-	req, err := http.NewRequest("POST", c.licenseURL(urlpath), io.NopCloser(bytes.NewReader(widevine.ServiceCertificateRequest)))
+	serviceCert, err := ofapi.OFApiAuthPost(urlpath, "", c.cfg.AuthInfo, c.cfg.Rules, widevine.ServiceCertificateRequest)
 	if err != nil {
 		return nil, err
-	}
-	c.addDRMHeaders(req, urlpath)
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request service cert: %w", err)
-	}
-	defer resp.Body.Close()
-	if !common.IsSuccessfulStatusCode(resp.StatusCode) {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("failed to get service cert: %s, %s", resp.Status, string(body))
-	}
-	serviceCert, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read response: %w", err)
 	}
 	cert, err := widevine.ParseServiceCert(serviceCert)
 	if err != nil {
