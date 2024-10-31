@@ -2,7 +2,6 @@ package ofapi
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
@@ -10,8 +9,8 @@ import (
 	"github.com/yinyajiang/gof/common"
 )
 
-func AddMPDHeaders(req *http.Request, authInfo gof.AuthInfo, mpdInfo gof.MPDInfo) {
-	common.AddHeaders(req, nil, map[string]string{
+func MPDHeaders(authInfo gof.AuthInfo, mpdInfo gof.MPDURLInfo) map[string]string {
+	return map[string]string{
 		"User-Agent": authInfo.UserAgent,
 		"Accept":     "*/*",
 		"X-BC":       authInfo.X_BC,
@@ -21,44 +20,32 @@ func AddMPDHeaders(req *http.Request, authInfo gof.AuthInfo, mpdInfo gof.MPDInfo
 			mpdInfo.KeyPairID,
 			strings.TrimPrefix(authInfo.Cookie, ";"),
 		),
-	})
+	}
 }
 
-func OFApiMPDGet(authInfo gof.AuthInfo, mpdInfo gof.MPDInfo) (body []byte, err error) {
-	resp, err := OFApiMPDGetResp(authInfo, mpdInfo)
+func AddMPDHeaders(req *http.Request, authInfo gof.AuthInfo, mpdInfo gof.MPDURLInfo) {
+	common.AddHeaders(req, nil, MPDHeaders(authInfo, mpdInfo))
+}
+
+func OFApiMPDGet(authInfo gof.AuthInfo, mpdInfo gof.MPDURLInfo) (body []byte, err error) {
+	_, body, err = OFApiMPDGetResp(authInfo, mpdInfo, true)
+	return
+}
+
+func OFApiMPDGetHeader(authInfo gof.AuthInfo, mpdInfo gof.MPDURLInfo) (header http.Header, err error) {
+	resp, _, err := OFApiMPDGetResp(authInfo, mpdInfo, false)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	return io.ReadAll(resp.Body)
-}
-
-func OFApiMPDGetHeader(authInfo gof.AuthInfo, mpdInfo gof.MPDInfo) (header http.Header, err error) {
-	resp, err := OFApiMPDGetResp(authInfo, mpdInfo)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if !common.IsSuccessfulStatusCode(resp.StatusCode) {
-		return nil, fmt.Errorf("failed to get data: %s", resp.Status)
-	}
+	resp.Body.Close()
 	return resp.Header, nil
 }
 
-func OFApiMPDGetResp(authInfo gof.AuthInfo, mpdInfo gof.MPDInfo) (resp *http.Response, err error) {
-	client := HttpClient()
+func OFApiMPDGetResp(authInfo gof.AuthInfo, mpdInfo gof.MPDURLInfo, readAll ...bool) (resp *http.Response, body []byte, err error) {
 	req, err := http.NewRequest("GET", mpdInfo.MPDURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	AddMPDHeaders(req, authInfo, mpdInfo)
-	resp, err = client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if !common.IsSuccessfulStatusCode(resp.StatusCode) {
-		resp.Body.Close()
-		return nil, fmt.Errorf("failed to get data: %s", resp.Status)
-	}
-	return resp, nil
+	return common.HttpDo(req, readAll...)
 }

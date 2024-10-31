@@ -7,13 +7,18 @@ type AuthInfo struct {
 	Cookie    string `json:"cookie"`
 }
 
-type MPDInfo struct {
+type MPDURLInfo struct {
 	MPDURL    string
 	Policy    string
 	Signature string
 	KeyPairID string
 	MediaID   string
 	PostID    string
+}
+
+type PostURLInfo struct {
+	PostID   string
+	UserName string
 }
 
 type Rules struct {

@@ -120,7 +120,7 @@ func (c *OFDRM) GetVideoDecryptedKeyByServer(dashVideoURL string) (string, error
 	return "", fmt.Errorf("all servers failed")
 }
 
-func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof.MPDInfo) (string, error) {
+func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof.MPDURLInfo) (string, error) {
 	data := common.MustMarshalJSON(map[string]string{
 		"PSSH":        pssh,
 		"License URL": ofapi.ApiURL(c.drmURLPath(mpdInfo)),
@@ -130,23 +130,15 @@ func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof
 		"Data":        "",
 		"Proxy":       "",
 	})
-	client := ofapi.HttpClient()
 	req, err := http.NewRequest("POST", serverURL, io.NopCloser(bytes.NewReader(data)))
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
+
+	_, body, err := common.HttpDo(req, true)
 	if err != nil {
 		return "", err
-	}
-	defer resp.Body.Close()
-	if !common.IsSuccessfulStatusCode(resp.StatusCode) {
-		return "", fmt.Errorf("failed to get decrypted key: %s", resp.Status)
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("read response: %w", err)
 	}
 	content := string(body)
 	if strings.Contains(strings.ToLower(content), "error") {
@@ -164,11 +156,11 @@ func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof
 	return strings.TrimSpace(msg.(string)), nil
 }
 
-func (c *OFDRM) drmURLPath(mpdInfo gof.MPDInfo) string {
+func (c *OFDRM) drmURLPath(mpdInfo gof.MPDURLInfo) string {
 	return ofapi.ApiURLPath("/users/media/%s/drm/post/%s?type=widevine", mpdInfo.MediaID, mpdInfo.PostID)
 }
 
-func (c *OFDRM) getDRMPSSH(mpdInfo gof.MPDInfo) (string, error) {
+func (c *OFDRM) getDRMPSSH(mpdInfo gof.MPDURLInfo) (string, error) {
 	data, err := ofapi.OFApiMPDGet(c.cfg.AuthInfo, mpdInfo)
 	if err != nil {
 		return "", err

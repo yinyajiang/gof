@@ -29,11 +29,21 @@ func main() {
 		AuthInfo: authInfo,
 		Rules:    rules,
 	})
-	subs, err := api.GetSubscriptions(ofapi.SubscritionTypeActive)
+	// err := api.CheckAuth()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// err := api.GetPurchased()
+	subs, err := api.GetSubscriptions(ofapi.SubscritionTypeAll)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(subs)
+	user, err := api.GetUserByUsername(subs[1].Username)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(user)
 
 	// clientID, err := os.ReadFile("/Volumes/1T 移动硬盘/Downloads/device_client_id_blob (1)")
 	// if err != nil {

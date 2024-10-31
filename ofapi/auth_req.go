@@ -45,15 +45,8 @@ func OFApiAuthPost[P Params](urlpath string, params P, auth gof.AuthInfo, rules 
 	if err != nil {
 		return nil, err
 	}
-	resp, err := HttpClient().Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if !common.IsSuccessfulStatusCode(resp.StatusCode) {
-		return nil, fmt.Errorf("failed to post data: %s, urlpath: %s", resp.Status, urlpath)
-	}
-	return io.ReadAll(resp.Body)
+	_, data, err = common.HttpDo(req, true)
+	return
 }
 
 func OFApiAuthGet[P Params](urlpath string, params P, auth gof.AuthInfo, rules gof.Rules) (data []byte, err error) {
@@ -61,15 +54,8 @@ func OFApiAuthGet[P Params](urlpath string, params P, auth gof.AuthInfo, rules g
 	if err != nil {
 		return nil, err
 	}
-	resp, err := HttpClient().Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if !common.IsSuccessfulStatusCode(resp.StatusCode) {
-		return nil, fmt.Errorf("failed to get data: %s, urlpath: %s", resp.Status, urlpath)
-	}
-	return io.ReadAll(resp.Body)
+	_, data, err = common.HttpDo(req, true)
+	return
 }
 
 func OFApiAuthGetUnmashel[P Params](urlpath string, params P, auth gof.AuthInfo, rules gof.Rules, pointer any) (err error) {
@@ -77,7 +63,12 @@ func OFApiAuthGetUnmashel[P Params](urlpath string, params P, auth gof.AuthInfo,
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(data, pointer)
+	err = json.Unmarshal(data, pointer)
+	if err != nil {
+		fmt.Printf("urlpath: %s, data unmarshal error: %v\n", urlpath, err)
+		fmt.Println(string(data))
+	}
+	return err
 }
 
 type Params interface {
@@ -97,7 +88,11 @@ func buildAuthRequest[P Params](method, urlpath string, params P, auth gof.AuthI
 			for k, v := range params {
 				query.Add(k, v)
 			}
-			urlpath = urlpath + "?" + query.Encode()
+			if strings.Contains(urlpath, "?") {
+				urlpath = urlpath + "&" + query.Encode()
+			} else {
+				urlpath = urlpath + "?" + query.Encode()
+			}
 		}
 	}
 
