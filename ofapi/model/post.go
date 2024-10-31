@@ -3,45 +3,45 @@ package model
 import "time"
 
 type Post struct {
-	ResponseType        string    `json:"responseType"`
-	ID                  int       `json:"id"`
-	PostedAt            time.Time `json:"postedAt"`
-	PostedAtPrecise     string    `json:"postedAtPrecise"`
-	ExpiredAt           any       `json:"expiredAt"`
-	Author              Author    `json:"author"`
-	Text                string    `json:"text"`
-	RawText             string    `json:"rawText"`
-	LockedText          bool      `json:"lockedText"`
-	IsFavorite          bool      `json:"isFavorite"`
-	CanReport           bool      `json:"canReport"`
-	CanDelete           bool      `json:"canDelete"`
-	CanComment          bool      `json:"canComment"`
-	CanEdit             bool      `json:"canEdit"`
-	IsPinned            bool      `json:"isPinned"`
-	FavoritesCount      int       `json:"favoritesCount"`
-	MediaCount          int       `json:"mediaCount"`
-	IsMediaReady        bool      `json:"isMediaReady"`
-	Voting              any       `json:"voting"`
-	IsOpened            bool      `json:"isOpened"`
-	CanToggleFavorite   bool      `json:"canToggleFavorite"`
-	StreamID            string    `json:"streamId"`
-	Price               any       `json:"price"`
-	HasVoting           bool      `json:"hasVoting"`
-	IsAddedToBookmarks  bool      `json:"isAddedToBookmarks"`
-	IsMarkdownDisabled  bool      `json:"isMarkdownDisabled"`
-	IsArchived          bool      `json:"isArchived"`
-	IsPrivateArchived   bool      `json:"isPrivateArchived"`
-	IsDeleted           bool      `json:"isDeleted"`
-	HasURL              bool      `json:"hasUrl"`
-	IsCouplePeopleMedia bool      `json:"isCouplePeopleMedia"`
-	CommentsCount       int       `json:"commentsCount"`
-	MentionedUsers      []any     `json:"mentionedUsers"`
-	LinkedUsers         []any     `json:"linkedUsers"`
-	TipsAmount          string    `json:"tipsAmount"`
-	TipsAmountRaw       string    `json:"tipsAmountRaw"`
-	Media               []Media   `json:"media"`
-	CanViewMedia        bool      `json:"canViewMedia"`
-	Preview             []any     `json:"preview"`
+	ResponseType        string     `json:"responseType"`
+	ID                  int        `json:"id"`
+	PostedAt            time.Time  `json:"postedAt"`
+	PostedAtPrecise     string     `json:"postedAtPrecise"`
+	ExpiredAt           any        `json:"expiredAt"`
+	Author              UserIDView `json:"author"`
+	Text                string     `json:"text"`
+	RawText             string     `json:"rawText"`
+	LockedText          bool       `json:"lockedText"`
+	IsFavorite          bool       `json:"isFavorite"`
+	CanReport           bool       `json:"canReport"`
+	CanDelete           bool       `json:"canDelete"`
+	CanComment          bool       `json:"canComment"`
+	CanEdit             bool       `json:"canEdit"`
+	IsPinned            bool       `json:"isPinned"`
+	FavoritesCount      int        `json:"favoritesCount"`
+	MediaCount          int        `json:"mediaCount"`
+	IsMediaReady        bool       `json:"isMediaReady"`
+	Voting              any        `json:"voting"`
+	IsOpened            bool       `json:"isOpened"`
+	CanToggleFavorite   bool       `json:"canToggleFavorite"`
+	StreamID            string     `json:"streamId"`
+	Price               any        `json:"price"`
+	HasVoting           bool       `json:"hasVoting"`
+	IsAddedToBookmarks  bool       `json:"isAddedToBookmarks"`
+	IsMarkdownDisabled  bool       `json:"isMarkdownDisabled"`
+	IsArchived          bool       `json:"isArchived"`
+	IsPrivateArchived   bool       `json:"isPrivateArchived"`
+	IsDeleted           bool       `json:"isDeleted"`
+	HasURL              bool       `json:"hasUrl"`
+	IsCouplePeopleMedia bool       `json:"isCouplePeopleMedia"`
+	CommentsCount       int        `json:"commentsCount"`
+	MentionedUsers      []any      `json:"mentionedUsers"`
+	LinkedUsers         []any      `json:"linkedUsers"`
+	TipsAmount          string     `json:"tipsAmount"`
+	TipsAmountRaw       string     `json:"tipsAmountRaw"`
+	Media               []Media    `json:"media"`
+	CanViewMedia        bool       `json:"canViewMedia"`
+	Preview             []any      `json:"preview"`
 }
 
 const (
@@ -122,7 +122,7 @@ type CloudFront struct {
 	CloudFrontKeyPairID string `json:"CloudFront-Key-Pair-Id"`
 }
 
-type Author struct {
+type UserIDView struct {
 	ID   int64  `json:"id"`
 	View string `json:"_view"`
 }
