@@ -21,6 +21,7 @@ type OFApiConfig struct {
 }
 
 func NewOFAPI(config OFApiConfig) *OFApi {
+	common.PanicAuthInfo(config.AuthInfo)
 	return &OFApi{cfg: config}
 }
 

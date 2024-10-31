@@ -33,9 +33,7 @@ type OFDRMConfig struct {
 }
 
 func NewOFDRM(config OFDRMConfig) *OFDRM {
-	if config.AuthInfo.Cookie == "" || config.AuthInfo.X_BC == "" || config.AuthInfo.UserAgent == "" {
-		panic("AuthInfo is not set")
-	}
+	common.PanicAuthInfo(config.AuthInfo)
 	return &OFDRM{cfg: config}
 }
 
