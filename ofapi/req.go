@@ -112,39 +112,11 @@ func (r *Req) AddAuthHeaders(req *http.Request, urlpath string) {
 	common.AddHeaders(req, r.AuthHeaders(urlpath), nil)
 }
 
-func (r *Req) MPDHeaders(mpdInfo gof.MPDURLInfo) map[string]string {
+func (r *Req) NoSignHeaders() map[string]string {
 	return map[string]string{
 		"User-Agent": r.authInfo.UserAgent,
 		"Accept":     "*/*",
 		"X-BC":       r.authInfo.X_BC,
-		"Cookie": fmt.Sprintf("CloudFront-Policy=%s; CloudFront-Signature=%s; CloudFront-Key-Pair-Id=%s; %s;",
-			mpdInfo.Policy,
-			mpdInfo.Signature,
-			mpdInfo.KeyPairID,
-			strings.TrimPrefix(r.authInfo.Cookie, ";"),
-		),
+		"Cookie":     strings.TrimPrefix(r.authInfo.Cookie, ";"),
 	}
-}
-
-func (r *Req) MPDGet(mpdInfo gof.MPDURLInfo) (body []byte, err error) {
-	_, body, err = r.mpdGetResp(mpdInfo, true)
-	return
-}
-
-func (r *Req) MPDGetHeader(mpdInfo gof.MPDURLInfo) (header http.Header, err error) {
-	resp, _, err := r.mpdGetResp(mpdInfo, false)
-	if err != nil {
-		return nil, err
-	}
-	resp.Body.Close()
-	return resp.Header, nil
-}
-
-func (r *Req) mpdGetResp(mpdInfo gof.MPDURLInfo, readAll ...bool) (resp *http.Response, body []byte, err error) {
-	req, err := http.NewRequest("GET", mpdInfo.MPDURL, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	common.AddHeaders(req, nil, r.MPDHeaders(mpdInfo))
-	return common.HttpDo(req, readAll...)
 }

@@ -11,10 +11,19 @@ import (
 	"github.com/yinyajiang/gof"
 )
 
-func ParseVideoMPDInfo(dashVideoURL string) (gof.MPDURLInfo, error) {
+type MPDURLInfo struct {
+	MPDURL    string
+	Policy    string
+	Signature string
+	KeyPairID string
+	MediaID   string
+	PostID    string
+}
+
+func ParseVideoMPDInfo(dashVideoURL string) (MPDURLInfo, error) {
 	split := strings.Split(dashVideoURL, ",")
 	if len(split) != 6 {
-		return gof.MPDURLInfo{}, fmt.Errorf("invalid video URL format: %s", dashVideoURL)
+		return MPDURLInfo{}, fmt.Errorf("invalid video URL format: %s", dashVideoURL)
 	}
 	mpdurl := split[0]
 	policy := split[1]
@@ -22,7 +31,7 @@ func ParseVideoMPDInfo(dashVideoURL string) (gof.MPDURLInfo, error) {
 	keyPairID := split[3]
 	mediaid := split[4]
 	postid := split[5]
-	return gof.MPDURLInfo{
+	return MPDURLInfo{
 		MPDURL:    mpdurl,
 		Policy:    policy,
 		Signature: signature,
