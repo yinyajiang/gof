@@ -40,19 +40,14 @@ func (c *OFApi) GetMe() (model.User, error) {
 	return c.GetUser("me")
 }
 
-type UserIdentifier struct {
-	ID       int64
-	Username string
-}
-
-func (c *OFApi) GetPaidPosts() ([]model.PaidPost, error) {
+func (c *OFApi) GetPaidPosts() ([]model.Post, error) {
 	var err error
 	hasMore := true
 	offset := 0
-	var result []model.PaidPost
+	var result []model.Post
 
 	for hasMore {
-		var moreList MoreList[model.PaidPost]
+		var moreList MoreList[model.Post]
 		err = OFApiAuthGetUnmashel("/posts/paid", map[string]string{
 			"offset": strconv.Itoa(offset),
 			"limit":  "50",
@@ -64,6 +59,7 @@ func (c *OFApi) GetPaidPosts() ([]model.PaidPost, error) {
 		}
 		hasMore = moreList.HasMore
 		offset += len(moreList.List)
+
 		result = append(result, moreList.List...)
 	}
 	return result, err
@@ -79,6 +75,10 @@ func (c *OFApi) GetPost(postURL string) (model.Post, error) {
 		"skip_users": "all",
 	}, c.cfg.AuthInfo, c.cfg.Rules, &post)
 	return post, err
+}
+
+func (c *OFApi) GetUserPosts(userID int64) ([]model.Post, error) {
+	return nil, nil
 }
 
 func (c *OFApi) GetCollectionsListUsers(listid string) ([]model.CollectionListUser, error) {
@@ -220,6 +220,8 @@ func (c *OFApi) GetUser(userEndpoint string) (model.User, error) {
 }
 
 type MoreList[T any] struct {
-	HasMore bool `json:"hasMore"`
-	List    []T  `json:"list"`
+	HasMore    bool   `json:"hasMore"`
+	List       []T    `json:"list"`
+	HeadMarker string `json:"headMarker"`
+	TailMarker string `json:"tailMarker"`
 }

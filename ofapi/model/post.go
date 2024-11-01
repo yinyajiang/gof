@@ -4,14 +4,14 @@ import "time"
 
 type Post struct {
 	ResponseType        string     `json:"responseType"`
-	ID                  int        `json:"id"`
+	ID                  int64      `json:"id"`
 	PostedAt            time.Time  `json:"postedAt"`
-	PostedAtPrecise     string     `json:"postedAtPrecise"`
+	PostedAtPrecise     any        `json:"postedAtPrecise"`
 	ExpiredAt           any        `json:"expiredAt"`
 	Author              UserIDView `json:"author"`
 	Text                string     `json:"text"`
 	RawText             string     `json:"rawText"`
-	LockedText          bool       `json:"lockedText"`
+	LockedText          any        `json:"lockedText"`
 	IsFavorite          bool       `json:"isFavorite"`
 	CanReport           bool       `json:"canReport"`
 	CanDelete           bool       `json:"canDelete"`
@@ -34,6 +34,9 @@ type Post struct {
 	IsDeleted           bool       `json:"isDeleted"`
 	HasURL              bool       `json:"hasUrl"`
 	IsCouplePeopleMedia bool       `json:"isCouplePeopleMedia"`
+	CantCommentReason   any        `json:"cantCommentReason"`
+	VotingType          any        `json:"votingType"`
+	CanVote             any        `json:"canVote"`
 	CommentsCount       int        `json:"commentsCount"`
 	MentionedUsers      []any      `json:"mentionedUsers"`
 	LinkedUsers         []any      `json:"linkedUsers"`
@@ -42,6 +45,9 @@ type Post struct {
 	Media               []Media    `json:"media"`
 	CanViewMedia        bool       `json:"canViewMedia"`
 	Preview             []any      `json:"preview"`
+
+	//Fields with the same name when deserialized, anonymous members of the structure are not assigned values
+	Purchased
 }
 
 const (
@@ -62,19 +68,16 @@ type Media struct {
 		Source  Source   `json:"source"`
 		Preview FileInfo `json:"preview"`
 	} `json:"info"`
-	Source           Source `json:"source"`
-	SquarePreview    string `json:"squarePreview"`
-	Full             string `json:"full"`
-	Preview          string `json:"preview"`
-	Thumb            string `json:"thumb"`
-	HasCustomPreview bool   `json:"hasCustomPreview"`
-	Duration         int    `json:"duration"`
-	IsReady          bool   `json:"isReady"`
-	Files            *Files `json:"files"`
-	VideoSources     struct {
-		Quality720 any `json:"720"`
-		Quality240 any `json:"240"`
-	} `json:"videoSources"`
+	Source           Source       `json:"source"`
+	SquarePreview    string       `json:"squarePreview"`
+	Full             string       `json:"full"`
+	Preview          string       `json:"preview"`
+	Thumb            string       `json:"thumb"`
+	HasCustomPreview bool         `json:"hasCustomPreview"`
+	Duration         int          `json:"duration"`
+	IsReady          bool         `json:"isReady"`
+	Files            *Files       `json:"files"`
+	VideoSources     VideoSources `json:"videoSources"`
 }
 
 type Files struct {
@@ -99,6 +102,11 @@ type Source struct {
 	Height   int    `json:"height"`
 	Size     int    `json:"size"`
 	Duration int    `json:"duration"`
+}
+
+type VideoSources struct {
+	Resolution720 interface{} `json:"720"`
+	Resolution240 interface{} `json:"240"`
 }
 
 type Drm struct {

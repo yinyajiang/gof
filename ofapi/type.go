@@ -41,3 +41,8 @@ func CollectionFilterByType(collectionType string) CollectionFilter {
 		return collection.Type == collectionType
 	}
 }
+
+type UserIdentifier struct {
+	ID       int64
+	Username string
+}
