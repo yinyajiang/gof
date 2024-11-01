@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
@@ -63,4 +64,19 @@ func PanicAuthInfo(authInfo gof.AuthInfo) {
 	if authInfo.Cookie == "" || authInfo.X_BC == "" || authInfo.UserAgent == "" {
 		panic("AuthInfo is invalid")
 	}
+}
+
+func GetDynamicRules() (gof.Rules, error) {
+	//"https://raw.githubusercontent.com/deviint/onlyfans-dynamic-rules/main/dynamicRules.json"
+	req, err := http.NewRequest("GET", "https://raw.githubusercontent.com/deviint/onlyfans-dynamic-rules/main/dynamicRules.json", nil)
+	if err != nil {
+		return gof.Rules{}, err
+	}
+	var rules gof.Rules
+	_, data, err := HttpDo(req, true)
+	if err != nil {
+		return rules, err
+	}
+	err = json.Unmarshal(data, &rules)
+	return rules, err
 }

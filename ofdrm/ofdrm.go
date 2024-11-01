@@ -21,20 +21,21 @@ import (
 )
 
 type OFDRM struct {
+	req *ofapi.Req
 	cfg OFDRMConfig
 }
 
 type OFDRMConfig struct {
-	AuthInfo          gof.AuthInfo
-	Rules             gof.Rules
 	ClientID          []byte
 	ClientPrivateKey  []byte
 	CDRMProjectServer []string
 }
 
-func NewOFDRM(config OFDRMConfig) *OFDRM {
-	common.PanicAuthInfo(config.AuthInfo)
-	return &OFDRM{cfg: config}
+func NewOFDRM(req *ofapi.Req, config OFDRMConfig) *OFDRM {
+	return &OFDRM{
+		req: req,
+		cfg: config,
+	}
 }
 
 func (c *OFDRM) GetVideoDecryptedKeyAuto(dashVideoURL string) (string, error) {
@@ -49,7 +50,7 @@ func (c *OFDRM) GetVideoDecryptedKeyAuto(dashVideoURL string) (string, error) {
 		if err == nil {
 			return key, nil
 		}
-		fmt.Println("failed to get decrypted key by client")
+		fmt.Println("failed to get decrypted key by client: ", err)
 	}
 	if useServer {
 		return c.GetVideoDecryptedKeyByServer(dashVideoURL)
@@ -82,7 +83,7 @@ func (c *OFDRM) GetVideoLastModified(dashVideoURL string) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
-	header, err := ofapi.OFApiMPDGetHeader(c.cfg.AuthInfo, mpdInfo)
+	header, err := c.req.MPDGetHeader(mpdInfo)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -122,7 +123,7 @@ func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, mpdInfo gof
 	data := common.MustMarshalJSON(map[string]string{
 		"PSSH":        pssh,
 		"License URL": ofapi.ApiURL(c.drmURLPath(mpdInfo)),
-		"Headers":     string(common.MustMarshalJSON(ofapi.AuthHeaders(c.drmURLPath(mpdInfo), c.cfg.AuthInfo, c.cfg.Rules))),
+		"Headers":     string(common.MustMarshalJSON(c.req.AuthHeaders(c.drmURLPath(mpdInfo)))),
 		"JSON":        "",
 		"Cookies":     "",
 		"Data":        "",
@@ -159,7 +160,7 @@ func (c *OFDRM) drmURLPath(mpdInfo gof.MPDURLInfo) string {
 }
 
 func (c *OFDRM) getDRMPSSH(mpdInfo gof.MPDURLInfo) (string, error) {
-	data, err := ofapi.OFApiMPDGet(c.cfg.AuthInfo, mpdInfo)
+	data, err := c.req.MPDGet(mpdInfo)
 	if err != nil {
 		return "", err
 	}
@@ -202,7 +203,7 @@ func (c *OFDRM) getWidevineKeys(urlpath, pssh string) ([]*widevine.Key, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get license challenge: %w", err)
 	}
-	license, err := ofapi.OFApiAuthPost(urlpath, "", c.cfg.AuthInfo, c.cfg.Rules, challenge)
+	license, err := c.req.Post(urlpath, nil, challenge)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +226,7 @@ func (c *OFDRM) getWidevineKeys(urlpath, pssh string) ([]*widevine.Key, error) {
 }
 
 func (c *OFDRM) loadWidevineServiceCert(urlpath string) (*widevinepb.DrmCertificate, error) {
-	serviceCert, err := ofapi.OFApiAuthPost(urlpath, "", c.cfg.AuthInfo, c.cfg.Rules, widevine.ServiceCertificateRequest)
+	serviceCert, err := c.req.Post(urlpath, nil, widevine.ServiceCertificateRequest)
 	if err != nil {
 		return nil, err
 	}
