@@ -25,9 +25,9 @@ type OFDRM struct {
 }
 
 type OFDRMConfig struct {
-	ClientID          []byte
-	ClientPrivateKey  []byte
-	CDRMProjectServer []string
+	ClientID                  []byte
+	ClientPrivateKey          []byte
+	OptionalCDRMProjectServer []string
 }
 
 func NewOFDRM(req *ofapi.Req, config OFDRMConfig) *OFDRM {
@@ -38,23 +38,26 @@ func NewOFDRM(req *ofapi.Req, config OFDRMConfig) *OFDRM {
 }
 
 func (c *OFDRM) GetVideoDecryptedKeyAuto(drm DRMInfo) (string, error) {
-	useClient := len(c.cfg.ClientID) != 0 && len(c.cfg.ClientPrivateKey) != 0
-	useServer := len(c.cfg.CDRMProjectServer) != 0
-
-	if !useClient && !useServer {
-		return "", fmt.Errorf("not config client id or private key, and CDRMProjectServer")
-	}
-	if useClient {
-		key, err := c.GetVideoDecryptedKeyByClient(drm)
-		if err == nil {
+	var clientErr error
+	var key string
+	if len(c.cfg.ClientID) != 0 {
+		key, clientErr = c.GetVideoDecryptedKeyByClient(drm)
+		if clientErr == nil {
 			return key, nil
 		}
-		fmt.Println("failed to get decrypted key by client: ", err)
+		fmt.Println("failed to get decrypted key by client: ", clientErr)
 	}
-	if useServer {
-		return c.GetVideoDecryptedKeyByServer(drm)
+
+	key, serverErr := c.GetVideoDecryptedKeyByServer(drm)
+	if serverErr == nil {
+		return key, nil
 	}
-	return "", nil
+	fmt.Println("failed to get decrypted key by server: ", serverErr)
+
+	if clientErr != nil {
+		return "", clientErr
+	}
+	return "", serverErr
 }
 
 func (c *OFDRM) GetVideoDecryptedKeyByClient(drm DRMInfo) (string, error) {
@@ -90,13 +93,20 @@ func (c *OFDRM) GetVideoLastModified(drm DRMInfo) (time.Time, error) {
 }
 
 func (c *OFDRM) GetVideoDecryptedKeyByServer(drm DRMInfo) (string, error) {
+	const fixedServerURL = "https://cdrm-project.com/"
+
+	serverURLs := c.cfg.OptionalCDRMProjectServer
+	if !slice.Contain(serverURLs, fixedServerURL) {
+		serverURLs = append(serverURLs, fixedServerURL)
+	}
+
 	pssh, err := c.getDRMPSSH(drm)
 	if err != nil {
 		return "", err
 	}
 	maxAttempts := 30
 	for i := 0; i < maxAttempts; i++ {
-		serverURL := c.cfg.CDRMProjectServer[i%len(c.cfg.CDRMProjectServer)]
+		serverURL := serverURLs[i%len(serverURLs)]
 		decryptedKey, err := c.getVideoDecryptedKeyByServer(serverURL, pssh, drm)
 		if err == nil {
 			return decryptedKey, nil

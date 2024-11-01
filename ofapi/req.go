@@ -19,7 +19,7 @@ import (
 
 type Req struct {
 	authInfo gof.AuthInfo
-	rules    gof.Rules
+	rules    rules
 }
 
 func (r *Req) AuthHeaders(urlpath string) map[string]string {

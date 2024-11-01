@@ -2,6 +2,7 @@ package common
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -46,4 +47,17 @@ func HttpDo(req *http.Request, readAll ...bool) (*http.Response, []byte, error) 
 	resp.Body.Close()
 	err = fmt.Errorf("[%s] [%s] failed, err: %v, status: %d, body: %s", req.Method, req.URL.String(), err, resp.StatusCode, string(body))
 	return nil, nil, err
+}
+
+func HttpGetUnmarshalJson(url string, pointer any) error {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	_, data, err := HttpDo(req, true)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data, pointer)
+	return err
 }

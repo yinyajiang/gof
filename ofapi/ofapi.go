@@ -16,19 +16,27 @@ type OFApi struct {
 	req *Req
 }
 
-type OFApiConfig struct {
-	AuthInfo gof.AuthInfo
-	Rules    gof.Rules
+type Config struct {
+	AuthInfo         gof.AuthInfo
+	OptionalRulesURL []string
 }
 
-func NewOFAPI(config OFApiConfig) *OFApi {
-	common.PanicAuthInfo(config.AuthInfo)
+func NewOFAPI(config Config) (*OFApi, error) {
+	if config.AuthInfo.Cookie == "" || config.AuthInfo.X_BC == "" || config.AuthInfo.UserAgent == "" {
+		return nil, errors.New("AuthInfo is invalid")
+	}
+
+	rules, err := loadDynamicRules(config.OptionalRulesURL...)
+	if err != nil {
+		return nil, err
+	}
+
 	return &OFApi{
 		req: &Req{
 			authInfo: config.AuthInfo,
-			rules:    config.Rules,
+			rules:    rules,
 		},
-	}
+	}, nil
 }
 
 func (c *OFApi) Req() *Req {
