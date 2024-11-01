@@ -8,7 +8,7 @@ import (
 	"github.com/yinyajiang/gof/common"
 )
 
-func loadClientID(cacheDir string, clientIDURL, clientPrivateKeyURL string) (clientID, clientPrivateKey []byte, err error) {
+func loadClient(cacheDir string, clientIDURL, clientPrivateKeyURL string) (clientID, clientPrivateKey []byte, err error) {
 	if clientIDURL != "" && clientPrivateKeyURL != "" {
 		wg := sync.WaitGroup{}
 		wg.Add(2)
@@ -22,19 +22,19 @@ func loadClientID(cacheDir string, clientIDURL, clientPrivateKeyURL string) (cli
 		}()
 		wg.Wait()
 		if len(clientID) != 0 && len(clientPrivateKey) != 0 {
-			cacheClientID(cacheDir, clientID, clientPrivateKey)
+			cacheClient(cacheDir, clientID, clientPrivateKey)
 			return clientID, clientPrivateKey, nil
 		}
 	}
-	return loadCachedClientID(cacheDir)
+	return loadCachedClient(cacheDir)
 }
 
-func cacheClientID(cacheDir string, clientID, clientPrivateKey []byte) {
+func cacheClient(cacheDir string, clientID, clientPrivateKey []byte) {
 	os.WriteFile(filepath.Join(cacheDir, "client_id"), clientID, 0644)
 	os.WriteFile(filepath.Join(cacheDir, "client_private_key"), clientPrivateKey, 0644)
 }
 
-func loadCachedClientID(cacheDir string) (clientID, clientPrivateKey []byte, err error) {
+func loadCachedClient(cacheDir string) (clientID, clientPrivateKey []byte, err error) {
 	clientID, err = os.ReadFile(filepath.Join(cacheDir, "client_id"))
 	if err != nil {
 		return nil, nil, err

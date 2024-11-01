@@ -36,7 +36,7 @@ type OFDRMConfig struct {
 
 func NewOFDRM(req *ofapi.Req, config OFDRMConfig) (*OFDRM, error) {
 	if len(config.ClientID) == 0 || len(config.ClientPrivateKey) == 0 {
-		clientID, clientPrivateKey, err := loadClientID(config.CacheClientDir, config.ClientIDURL, config.ClientPrivateKeyURL)
+		clientID, clientPrivateKey, err := loadClient(config.CacheClientDir, config.ClientIDURL, config.ClientPrivateKeyURL)
 		if err != nil {
 			return nil, err
 		}
