@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"time"
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/yinyajiang/gof"
@@ -47,7 +48,7 @@ func (c *OFApi) GetPaidPosts() ([]model.Post, error) {
 	var result []model.Post
 
 	for hasMore {
-		var moreList MoreList[model.Post]
+		var moreList moreList[model.Post]
 		err = OFApiAuthGetUnmashel("/posts/paid", map[string]string{
 			"offset": strconv.Itoa(offset),
 			"limit":  "50",
@@ -78,7 +79,69 @@ func (c *OFApi) GetPost(postURL string) (model.Post, error) {
 }
 
 func (c *OFApi) GetUserPosts(userID int64) ([]model.Post, error) {
-	return nil, nil
+	return c.GetUserPostsByTime(userID, time.Now(), TimeDirectionBefore)
+}
+
+func (c *OFApi) GetUserMedias(userID int64) ([]model.Post, error) {
+	return c.GetUserMediasByTime(userID, time.Now(), TimeDirectionBefore)
+}
+
+func (c *OFApi) GetUserMediasByTime(userID int64, timePoint time.Time, timeDirection TimeDirection) ([]model.Post, error) {
+	param := initPublishTimeParam(map[string]string{
+		"limit":      "50",
+		"order":      "publish_date_desc",
+		"format":     "infinite",
+		"skip_users": "all",
+	}, timePoint, timeDirection)
+
+	var result []model.Post
+	var err error
+	hasMore := true
+	for hasMore {
+		var moreList moreList[model.Post]
+		err = OFApiAuthGetUnmashel(ApiURLPath("/users/%d/posts/medias", userID),
+			param, c.cfg.AuthInfo, c.cfg.Rules, &moreList)
+		if err != nil {
+			break
+		}
+
+		hasMore = moreList.HasMore
+		result = append(result, moreList.List...)
+
+		updatePublishTimeParam(param, timeDirection, moreList.moreMarker)
+	}
+	if len(result) != 0 {
+		return result, nil
+	}
+	return nil, err
+}
+
+func (c *OFApi) GetUserPostsByTime(userID int64, timePoint time.Time, timeDirection TimeDirection) ([]model.Post, error) {
+	param := initPublishTimeParam(map[string]string{
+		"limit":  "50",
+		"order":  "publish_date_desc",
+		"format": "infinite",
+	}, timePoint, timeDirection)
+
+	var result []model.Post
+	var err error
+	hasMore := true
+	for hasMore {
+		var moreList moreList[model.Post]
+		err = OFApiAuthGetUnmashel(ApiURLPath("/users/%d/posts", userID),
+			param, c.cfg.AuthInfo, c.cfg.Rules, &moreList)
+		if err != nil {
+			break
+		}
+		hasMore = moreList.HasMore
+		result = append(result, moreList.List...)
+
+		updatePublishTimeParam(param, timeDirection, moreList.moreMarker)
+	}
+	if len(result) != 0 {
+		return result, nil
+	}
+	return nil, err
 }
 
 func (c *OFApi) GetCollectionsListUsers(listid string) ([]model.CollectionListUser, error) {
@@ -87,7 +150,7 @@ func (c *OFApi) GetCollectionsListUsers(listid string) ([]model.CollectionListUs
 	offset := 0
 	var result []model.CollectionListUser
 	for hasMore {
-		var moreList MoreList[model.CollectionListUser]
+		var moreList moreList[model.CollectionListUser]
 		err = OFApiAuthGetUnmashel("/lists/"+listid+"/users", map[string]string{
 			"offset": strconv.Itoa(offset),
 			"limit":  "50",
@@ -111,7 +174,7 @@ func (c *OFApi) GetCollections(filter ...CollectionFilter) ([]model.Collection, 
 	offset := 0
 	var result []model.Collection
 	for hasMore {
-		var moreList MoreList[model.Collection]
+		var moreList moreList[model.Collection]
 		err = OFApiAuthGetUnmashel("/lists", map[string]string{
 			"offset":     strconv.Itoa(offset),
 			"limit":      "50",
@@ -169,7 +232,7 @@ func (c *OFApi) GetSubscriptions(subType SubscritionType, filter ...SubscribeFil
 	hasMore := true
 	offset := 0
 	for hasMore {
-		var moreList MoreList[model.Subscription]
+		var moreList moreList[model.Subscription]
 		err = OFApiAuthGetUnmashel("/subscriptions/subscribes", map[string]string{
 			"offset": strconv.Itoa(offset),
 			"limit":  "50",
@@ -217,11 +280,4 @@ func (c *OFApi) GetUser(userEndpoint string) (model.User, error) {
 		return model.User{}, err
 	}
 	return userInfo, nil
-}
-
-type MoreList[T any] struct {
-	HasMore    bool   `json:"hasMore"`
-	List       []T    `json:"list"`
-	HeadMarker string `json:"headMarker"`
-	TailMarker string `json:"tailMarker"`
 }

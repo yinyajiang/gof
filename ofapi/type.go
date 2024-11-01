@@ -42,6 +42,13 @@ func CollectionFilterByType(collectionType string) CollectionFilter {
 	}
 }
 
+type TimeDirection int
+
+const (
+	TimeDirectionBefore TimeDirection = 0
+	TimeDirectionAfter  TimeDirection = 1
+)
+
 type UserIdentifier struct {
 	ID       int64
 	Username string
