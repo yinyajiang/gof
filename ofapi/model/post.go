@@ -47,7 +47,7 @@ type Post struct {
 	Preview             []any      `json:"preview"`
 
 	//Fields with the same name when deserialized, anonymous members of the structure are not assigned values
-	Purchased
+	purchased
 }
 
 const (

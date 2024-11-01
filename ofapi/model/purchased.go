@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-type Purchased struct {
+type purchased struct {
 	ResponseType        string     `json:"responseType"`
 	Text                string     `json:"text"`
 	GiphyID             any        `json:"giphyId"`
