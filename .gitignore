@@ -1,2 +1,4 @@
 
 .DS_Store
+cmd/client_id
+cmd/client_private_key
