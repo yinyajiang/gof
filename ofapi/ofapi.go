@@ -19,6 +19,7 @@ type OFApi struct {
 type Config struct {
 	AuthInfo         gof.AuthInfo
 	OptionalRulesURL []string
+	RulesCacheDir    string
 }
 
 func NewOFAPI(config Config) (*OFApi, error) {
@@ -26,7 +27,7 @@ func NewOFAPI(config Config) (*OFApi, error) {
 		return nil, errors.New("AuthInfo is invalid")
 	}
 
-	rules, err := loadDynamicRules(config.OptionalRulesURL...)
+	rules, err := loadDynamicRules(config.RulesCacheDir, config.OptionalRulesURL)
 	if err != nil {
 		return nil, err
 	}
