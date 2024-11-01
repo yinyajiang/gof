@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/yinyajiang/gof"
 	"github.com/yinyajiang/gof/ofapi"
@@ -57,22 +56,13 @@ h:
 		}
 	}
 
-	clientID, err := os.ReadFile("/Volumes/1T 移动硬盘/Downloads/device_client_id_blob (1)")
-	if err != nil {
-		panic(err)
-	}
-	privateKey, err := os.ReadFile("/Volumes/1T 移动硬盘/Downloads/device_private_key (1)")
-	if err != nil {
-		panic(err)
-	}
-
-	drm := ofdrm.NewOFDRM(
+	drm, err := ofdrm.NewOFDRM(
 		api.Req(),
-		ofdrm.OFDRMConfig{
-			ClientID:         clientID,
-			ClientPrivateKey: privateKey,
-		},
+		ofdrm.OFDRMConfig{},
 	)
+	if err != nil {
+		panic(err)
+	}
 	lasetModify, err := drm.GetVideoDecryptedKeyAuto(drmInfo)
 	if err != nil {
 		panic(err)

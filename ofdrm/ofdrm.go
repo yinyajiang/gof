@@ -25,16 +25,28 @@ type OFDRM struct {
 }
 
 type OFDRMConfig struct {
-	ClientID                  []byte
-	ClientPrivateKey          []byte
+	ClientID            []byte
+	ClientPrivateKey    []byte
+	ClientIDURL         string
+	ClientPrivateKeyURL string
+	CacheClientDir      string
+
 	OptionalCDRMProjectServer []string
 }
 
-func NewOFDRM(req *ofapi.Req, config OFDRMConfig) *OFDRM {
+func NewOFDRM(req *ofapi.Req, config OFDRMConfig) (*OFDRM, error) {
+	if len(config.ClientID) == 0 || len(config.ClientPrivateKey) == 0 {
+		clientID, clientPrivateKey, err := loadClientID(config.CacheClientDir, config.ClientIDURL, config.ClientPrivateKeyURL)
+		if err != nil {
+			return nil, err
+		}
+		config.ClientID = clientID
+		config.ClientPrivateKey = clientPrivateKey
+	}
 	return &OFDRM{
 		req: req,
 		cfg: config,
-	}
+	}, nil
 }
 
 func (c *OFDRM) GetVideoDecryptedKeyAuto(drm DRMInfo) (string, error) {

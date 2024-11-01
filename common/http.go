@@ -49,12 +49,17 @@ func HttpDo(req *http.Request, readAll ...bool) (*http.Response, []byte, error) 
 	return nil, nil, err
 }
 
-func HttpGetUnmarshalJson(url string, pointer any) error {
+func HttpGet(url string) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	_, data, err := HttpDo(req, true)
+	return data, err
+}
+
+func HttpGetUnmarshalJson(url string, pointer any) error {
+	data, err := HttpGet(url)
 	if err != nil {
 		return err
 	}
