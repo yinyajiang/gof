@@ -15,7 +15,7 @@ import (
 	"github.com/yinyajiang/gof/common"
 )
 
-func loadDynamicRules(cacheDir string, rulesURL []string) (rules, error) {
+func loadRules(cacheDir string, rulesURL []string) (rules, error) {
 	var allRules []rules
 
 	urlRules, urlErr := loadURLRules(rulesURL)

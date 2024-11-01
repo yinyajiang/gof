@@ -27,7 +27,7 @@ func NewOFAPI(config Config) (*OFApi, error) {
 		return nil, errors.New("AuthInfo is invalid")
 	}
 
-	rules, err := loadDynamicRules(config.RulesCacheDir, config.OptionalRulesURL)
+	rules, err := loadRules(config.RulesCacheDir, config.OptionalRulesURL)
 	if err != nil {
 		return nil, err
 	}
