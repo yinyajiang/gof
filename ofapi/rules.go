@@ -19,11 +19,11 @@ func loadDynamicRules(cacheDir string, rulesURL []string) (rules, error) {
 	var allRules []rules
 
 	urlRules, urlErr := loadURLRules(rulesURL)
-	if urlErr != nil {
+	if urlErr == nil {
 		allRules = append(allRules, urlRules)
 	}
 	cachedRules, cachedErr := loadCachedRules(cacheDir)
-	if cachedErr != nil {
+	if cachedErr == nil {
 		allRules = append(allRules, cachedRules)
 	}
 	if cachedErr != nil && urlErr != nil {
