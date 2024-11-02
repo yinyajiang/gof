@@ -24,7 +24,7 @@ type Req struct {
 }
 
 func (r *Req) Post(urlpath string, params any, body []byte) (data []byte, err error) {
-	req, err := r.buildAuthRequest("POST", urlpath, params, body)
+	req, err := r.buildSignedRequest("POST", urlpath, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (r *Req) Post(urlpath string, params any, body []byte) (data []byte, err er
 }
 
 func (r *Req) Get(urlpath string, params any) (data []byte, err error) {
-	req, err := r.buildAuthRequest("GET", urlpath, params)
+	req, err := r.buildSignedRequest("GET", urlpath, params)
 	if err != nil {
 		return nil, err
 	}
@@ -54,12 +54,16 @@ func (r *Req) GetUnmashel(urlpath string, params any, pointer any) (err error) {
 	return err
 }
 
-func (r *Req) buildAuthRequest(method, urlpath string, params any, body_ ...[]byte) (*http.Request, error) {
+func (r *Req) buildSignedRequest(method, urlpath string, params any, body_ ...[]byte) (*http.Request, error) {
 	switch params := any(params).(type) {
 	case string:
 		params = strings.TrimLeft(params, "?")
 		if params != "" {
-			urlpath = urlpath + "?" + params
+			if strings.Contains(urlpath, "?") {
+				urlpath = urlpath + "&" + params
+			} else {
+				urlpath = urlpath + "?" + params
+			}
 		}
 	case map[string]string:
 		if len(params) > 0 {
@@ -83,11 +87,11 @@ func (r *Req) buildAuthRequest(method, urlpath string, params any, body_ ...[]by
 	if err != nil {
 		return nil, err
 	}
-	r.AddAuthHeaders(req, urlpath)
+	r.AddSignedHeaders(req, urlpath)
 	return req, nil
 }
 
-func (r *Req) AddAuthHeaders(req *http.Request, urlpath string) {
+func (r *Req) AddSignedHeaders(req *http.Request, urlpath string) {
 	common.AddHeaders(req, r.SignedHeaders(urlpath), nil)
 }
 
