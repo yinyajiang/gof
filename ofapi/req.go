@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/yinyajiang/gof"
 	"github.com/yinyajiang/gof/common"
@@ -22,7 +23,7 @@ type Req struct {
 	rules    rules
 }
 
-func (r *Req) AuthHeaders(urlpath string) map[string]string {
+func (r *Req) SignedHeaders(urlpath string) map[string]string {
 	urlpath = ApiURLPath(urlpath)
 	timestamp := time.Now().UTC().UnixMilli()
 	hashBytes := sha1.Sum([]byte(strings.Join([]string{r.rules.StaticParam, fmt.Sprintf("%d", timestamp), urlpath, r.authInfo.UserID}, "\n")))
@@ -109,14 +110,20 @@ func (r *Req) buildAuthRequest(method, urlpath string, params any, body_ ...[]by
 }
 
 func (r *Req) AddAuthHeaders(req *http.Request, urlpath string) {
-	common.AddHeaders(req, r.AuthHeaders(urlpath), nil)
+	common.AddHeaders(req, r.SignedHeaders(urlpath), nil)
 }
 
-func (r *Req) NoSignHeaders() map[string]string {
-	return map[string]string{
+func (r *Req) UnsignedHeaders(mergedHeaders map[string]string) map[string]string {
+	cookie := strings.TrimPrefix(r.authInfo.Cookie, ";")
+	if mergedHeaders != nil && mergedHeaders["Cookie"] != "" {
+		cookie = strings.TrimSuffix(cookie, ";") + ";" + strings.TrimPrefix(mergedHeaders["Cookie"], ";")
+		delete(mergedHeaders, "Cookie")
+	}
+
+	return maputil.Merge(map[string]string{
 		"User-Agent": r.authInfo.UserAgent,
 		"Accept":     "*/*",
 		"X-BC":       r.authInfo.X_BC,
-		"Cookie":     strings.TrimPrefix(r.authInfo.Cookie, ";"),
-	}
+		"Cookie":     cookie,
+	}, mergedHeaders)
 }

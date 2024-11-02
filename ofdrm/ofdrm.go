@@ -89,17 +89,14 @@ func (c *OFDRM) GetVideoDecryptedKeyByClient(drm DRMInfo) (string, error) {
 }
 
 func (c *OFDRM) GetVideoLastModified(drm DRMInfo) (time.Time, error) {
-	header, err := c.noSignGetHeader(drm)
+	lastModified, err := c.unsignedGetHeader(drm, "Last-Modified")
 	if err != nil {
-		return time.Time{}, err
-	}
-	lastModified := header.Get("Last-Modified")
-	if lastModified == "" {
-		return time.Now(), nil
+		fmt.Println("failed to get last modified: ", err)
+		return time.Now(), err
 	}
 	lastModifiedTime, err := time.Parse(time.RFC1123, lastModified)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("parse last modified: %w", err)
+		return time.Now(), fmt.Errorf("parse last modified: %w", err)
 	}
 	return lastModifiedTime.Local(), nil
 }
@@ -132,7 +129,7 @@ func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, drm DRMInfo
 	data := common.MustMarshalJSON(map[string]string{
 		"PSSH":        pssh,
 		"License URL": ofapi.ApiURL(c.drmURLPath(drm)),
-		"Headers":     string(common.MustMarshalJSON(c.req.AuthHeaders(c.drmURLPath(drm)))),
+		"Headers":     common.MustUnmarshalJSONStr(c.req.SignedHeaders(c.drmURLPath(drm))),
 		"JSON":        "",
 		"Cookies":     "",
 		"Data":        "",
@@ -169,7 +166,7 @@ func (c *OFDRM) drmURLPath(drm DRMInfo) string {
 }
 
 func (c *OFDRM) getDRMPSSH(drm DRMInfo) (string, error) {
-	data, err := c.noSignGet(drm)
+	data, err := c.unsignedGet(drm)
 	if err != nil {
 		return "", err
 	}
@@ -246,32 +243,31 @@ func (c *OFDRM) loadWidevineServiceCert(urlpath string) (*widevinepb.DrmCertific
 	return cert, nil
 }
 
-func (c *OFDRM) noSignGet(drm DRMInfo) (body []byte, err error) {
-	_, body, err = c.noSignGetResp(drm, true)
+func (c *OFDRM) unsignedGet(drm DRMInfo) (body []byte, err error) {
+	_, body, err = c.unsignedGetResp(drm, true)
 	return
 }
 
-func (c *OFDRM) noSignGetHeader(drm DRMInfo) (header http.Header, err error) {
-	resp, _, err := c.noSignGetResp(drm, false)
+func (c *OFDRM) unsignedGetHeader(drm DRMInfo, key string) (h string, err error) {
+	resp, _, err := c.unsignedGetResp(drm, false)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	resp.Body.Close()
-	return resp.Header, nil
+	return resp.Header.Get(key), nil
 }
 
-func (c *OFDRM) noSignGetResp(drm DRMInfo, readAll ...bool) (resp *http.Response, body []byte, err error) {
+func (c *OFDRM) unsignedGetResp(drm DRMInfo, readAll ...bool) (resp *http.Response, body []byte, err error) {
 	req, err := http.NewRequest("GET", drm.Drm.Manifest.Dash, nil)
 	if err != nil {
 		return nil, nil, err
 	}
-	header := c.req.NoSignHeaders()
-	header["Cookie"] = fmt.Sprintf("CloudFront-Policy=%s; CloudFront-Signature=%s; CloudFront-Key-Pair-Id=%s; %s;",
-		drm.Drm.Signature.Dash.CloudFrontPolicy,
-		drm.Drm.Signature.Dash.CloudFrontSignature,
-		drm.Drm.Signature.Dash.CloudFrontKeyPairID,
-		strings.TrimPrefix(header["Cookie"], ";"),
-	)
+	header := c.req.UnsignedHeaders(map[string]string{
+		"Cookie": fmt.Sprintf("CloudFront-Policy=%s; CloudFront-Signature=%s; CloudFront-Key-Pair-Id=%s",
+			drm.Drm.Signature.Dash.CloudFrontPolicy,
+			drm.Drm.Signature.Dash.CloudFrontSignature,
+			drm.Drm.Signature.Dash.CloudFrontKeyPairID),
+	})
 	common.AddHeaders(req, nil, header)
 	return common.HttpDo(req, readAll...)
 }

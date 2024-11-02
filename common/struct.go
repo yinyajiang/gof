@@ -67,3 +67,7 @@ func MustMarshalJSON(v any) []byte {
 	}
 	return b
 }
+
+func MustUnmarshalJSONStr(v any) string {
+	return string(MustMarshalJSON(v))
+}
