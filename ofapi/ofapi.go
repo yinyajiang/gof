@@ -66,7 +66,7 @@ func (c *OFApi) GetUserHightlights(userID int64, withStories ...bool) ([]model.H
 	var result []model.Highlight
 	for hasMore {
 		var moreList moreList[model.Highlight]
-		err = c.req.GetUnmashel(ApiURLPath("/users/%d/stories/highlights", userID), map[string]string{
+		err = c.req.GetUnmarshal(ApiURLPath("/users/%d/stories/highlights", userID), map[string]string{
 			"offset": strconv.Itoa(offset),
 			"limit":  "5",
 		}, &moreList)
@@ -96,13 +96,13 @@ func (c *OFApi) GetUserHightlights(userID int64, withStories ...bool) ([]model.H
 
 func (c *OFApi) GetHighlight(highlightID int64) (model.Highlight, error) {
 	var highlight model.Highlight
-	err := c.req.GetUnmashel(ApiURLPath("/stories/highlights/%d", highlightID), nil, &highlight)
+	err := c.req.GetUnmarshal(ApiURLPath("/stories/highlights/%d", highlightID), nil, &highlight)
 	return highlight, err
 }
 
 func (c *OFApi) GetUserStories(userID int64) ([]model.Story, error) {
 	var stories []model.Story
-	err := c.req.GetUnmashel(ApiURLPath("/users/%d/stories", userID), map[string]string{
+	err := c.req.GetUnmarshal(ApiURLPath("/users/%d/stories", userID), map[string]string{
 		"limit": "50",
 		"order": "publish_date_desc",
 	}, &stories)
@@ -117,7 +117,7 @@ func (c *OFApi) GetPaidPosts() ([]model.Post, error) {
 
 	for hasMore {
 		var moreList moreList[model.Post]
-		err = c.req.GetUnmashel("/posts/paid", map[string]string{
+		err = c.req.GetUnmarshal("/posts/paid", map[string]string{
 			"offset": strconv.Itoa(offset),
 			"limit":  "50",
 			"order":  "publish_date_desc",
@@ -140,7 +140,7 @@ func (c *OFApi) GetPost(postURL string) (model.Post, error) {
 		return model.Post{}, err
 	}
 	var post model.Post
-	err = c.req.GetUnmashel(ApiURLPath("/posts/%s", postURLInfo.PostID), map[string]string{
+	err = c.req.GetUnmarshal(ApiURLPath("/posts/%s", postURLInfo.PostID), map[string]string{
 		"skip_users": "all",
 	}, &post)
 	return post, err
@@ -167,7 +167,7 @@ func (c *OFApi) GetUserMediasByTime(userID int64, timePoint time.Time, timeDirec
 	hasMore := true
 	for hasMore {
 		var moreList moreList[model.Post]
-		err = c.req.GetUnmashel(ApiURLPath("/users/%d/posts/medias", userID),
+		err = c.req.GetUnmarshal(ApiURLPath("/users/%d/posts/medias", userID),
 			param, &moreList)
 		if err != nil {
 			break
@@ -196,7 +196,7 @@ func (c *OFApi) GetUserPostsByTime(userID int64, timePoint time.Time, timeDirect
 	hasMore := true
 	for hasMore {
 		var moreList moreList[model.Post]
-		err = c.req.GetUnmashel(ApiURLPath("/users/%d/posts", userID), param, &moreList)
+		err = c.req.GetUnmarshal(ApiURLPath("/users/%d/posts", userID), param, &moreList)
 		if err != nil {
 			break
 		}
@@ -218,7 +218,7 @@ func (c *OFApi) GetCollectionsListUsers(listid string) ([]model.CollectionListUs
 	var result []model.CollectionListUser
 	for hasMore {
 		var moreList moreList[model.CollectionListUser]
-		err = c.req.GetUnmashel("/lists/"+listid+"/users", map[string]string{
+		err = c.req.GetUnmarshal("/lists/"+listid+"/users", map[string]string{
 			"offset": strconv.Itoa(offset),
 			"limit":  "50",
 		}, &moreList)
@@ -242,7 +242,7 @@ func (c *OFApi) GetCollections(filter ...CollectionFilter) ([]model.Collection, 
 	var result []model.Collection
 	for hasMore {
 		var moreList moreList[model.Collection]
-		err = c.req.GetUnmashel("/lists", map[string]string{
+		err = c.req.GetUnmarshal("/lists", map[string]string{
 			"offset":     strconv.Itoa(offset),
 			"limit":      "50",
 			"skip_users": "all",
@@ -300,7 +300,7 @@ func (c *OFApi) GetSubscriptions(subType SubscritionType, filter ...SubscribeFil
 	offset := 0
 	for hasMore {
 		var moreList moreList[model.Subscription]
-		err = c.req.GetUnmashel("/subscriptions/subscribes", map[string]string{
+		err = c.req.GetUnmarshal("/subscriptions/subscribes", map[string]string{
 			"offset": strconv.Itoa(offset),
 			"limit":  "50",
 			"type":   string(subType),

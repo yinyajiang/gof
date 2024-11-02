@@ -83,7 +83,7 @@ func loadURLRules(rulesURL []string) (rules, error) {
 		go func(i int, url string) {
 			defer wg.Done()
 			var rules rules
-			e := common.HttpGetUnmarshalJson(url, &rules)
+			e := common.HttpGetUnmarshal(url, &rules)
 			if e != nil {
 				fmt.Printf("get rules from %s failed, err: %v\n", url, e)
 			} else {

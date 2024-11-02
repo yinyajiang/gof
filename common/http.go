@@ -58,7 +58,7 @@ func HttpGet(url string) ([]byte, error) {
 	return data, err
 }
 
-func HttpGetUnmarshalJson(url string, pointer any) error {
+func HttpGetUnmarshal(url string, pointer any) error {
 	data, err := HttpGet(url)
 	if err != nil {
 		return err

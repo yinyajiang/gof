@@ -41,7 +41,7 @@ func (r *Req) Get(urlpath string, params any) (data []byte, err error) {
 	return
 }
 
-func (r *Req) GetUnmashel(urlpath string, params any, pointer any) (err error) {
+func (r *Req) GetUnmarshal(urlpath string, params any, pointer any) (err error) {
 	data, err := r.Get(urlpath, params)
 	if err != nil {
 		return err
