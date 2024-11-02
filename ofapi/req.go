@@ -23,28 +23,6 @@ type Req struct {
 	rules    rules
 }
 
-func (r *Req) SignedHeaders(urlpath string) map[string]string {
-	urlpath = ApiURLPath(urlpath)
-	timestamp := time.Now().UTC().UnixMilli()
-	hashBytes := sha1.Sum([]byte(strings.Join([]string{r.rules.StaticParam, fmt.Sprintf("%d", timestamp), urlpath, r.authInfo.UserID}, "\n")))
-	hashString := strings.ToLower(hex.EncodeToString(hashBytes[:]))
-	checksum := slice.Reduce(r.rules.ChecksumIndexes, func(_ int, number int, accumulator int) int {
-		return accumulator + int(hashString[number])
-	}, 0) + r.rules.ChecksumConstant
-	sign := r.rules.Prefix + ":" + hashString + ":" + strings.ToLower(fmt.Sprintf("%X", checksum)) + ":" + r.rules.Suffix
-	header := map[string]string{
-		"accept":     "application/json, text/plain",
-		"app-token":  r.rules.AppToken,
-		"cookie":     r.authInfo.Cookie,
-		"sign":       sign,
-		"time":       fmt.Sprintf("%d", timestamp),
-		"user-id":    r.authInfo.UserID,
-		"user-agent": r.authInfo.UserAgent,
-		"x-bc":       r.authInfo.X_BC,
-	}
-	return header
-}
-
 func (r *Req) Post(urlpath string, params any, body []byte) (data []byte, err error) {
 	req, err := r.buildAuthRequest("POST", urlpath, params, body)
 	if err != nil {
@@ -126,4 +104,26 @@ func (r *Req) UnsignedHeaders(mergedHeaders map[string]string) map[string]string
 		"X-BC":       r.authInfo.X_BC,
 		"Cookie":     cookie,
 	}, mergedHeaders)
+}
+
+func (r *Req) SignedHeaders(urlpath string) map[string]string {
+	urlpath = ApiURLPath(urlpath)
+	timestamp := time.Now().UTC().UnixMilli()
+	hashBytes := sha1.Sum([]byte(strings.Join([]string{r.rules.StaticParam, fmt.Sprintf("%d", timestamp), urlpath, r.authInfo.UserID}, "\n")))
+	hashString := strings.ToLower(hex.EncodeToString(hashBytes[:]))
+	checksum := slice.Reduce(r.rules.ChecksumIndexes, func(_ int, number int, accumulator int) int {
+		return accumulator + int(hashString[number])
+	}, 0) + r.rules.ChecksumConstant
+	sign := r.rules.Prefix + ":" + hashString + ":" + strings.ToLower(fmt.Sprintf("%X", checksum)) + ":" + r.rules.Suffix
+	header := map[string]string{
+		"accept":     "application/json, text/plain",
+		"app-token":  r.rules.AppToken,
+		"cookie":     r.authInfo.Cookie,
+		"sign":       sign,
+		"time":       fmt.Sprintf("%d", timestamp),
+		"user-id":    r.authInfo.UserID,
+		"user-agent": r.authInfo.UserAgent,
+		"x-bc":       r.authInfo.X_BC,
+	}
+	return header
 }
