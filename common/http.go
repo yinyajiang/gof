@@ -64,5 +64,8 @@ func HttpGetUnmarshal(url string, pointer any) error {
 		return err
 	}
 	err = json.Unmarshal(data, pointer)
+	if err != nil {
+		err = fmt.Errorf("unmarshal %s failed, err: %v, data: %s", url, err, string(data))
+	}
 	return err
 }
