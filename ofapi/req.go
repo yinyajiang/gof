@@ -81,12 +81,9 @@ func (r *Req) buildSignedRequest(method, urlpath string, params any, body_ ...[]
 	if err != nil {
 		return nil, err
 	}
-	r.AddSignedHeaders(req, urlpath)
-	return req, nil
-}
 
-func (r *Req) AddSignedHeaders(req *http.Request, urlpath string) {
 	common.AddHeaders(req, r.SignedHeaders(urlpath), nil)
+	return req, nil
 }
 
 func (r *Req) UnsignedHeaders(mergedHeaders map[string]string) map[string]string {
