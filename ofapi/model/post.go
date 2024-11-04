@@ -69,7 +69,7 @@ type Media struct {
 		Preview FileInfo `json:"preview"`
 	} `json:"info"`
 	Source           Source       `json:"source"`
-	SquarePreview    string       `json:"squarePreview"`
+	SquarePreview    any          `json:"squarePreview"`
 	Full             string       `json:"full"`
 	Preview          string       `json:"preview"`
 	Thumb            string       `json:"thumb"`
@@ -78,6 +78,9 @@ type Media struct {
 	IsReady          bool         `json:"isReady"`
 	Files            *Files       `json:"files"`
 	VideoSources     VideoSources `json:"videoSources"`
+	Src              any          `json:"src"`
+	Locked           any          `json:"locked"`
+	Video            any          `json:"video"`
 }
 
 type Files struct {
@@ -128,9 +131,4 @@ type CloudFront struct {
 	CloudFrontPolicy    string `json:"CloudFront-Policy"`
 	CloudFrontSignature string `json:"CloudFront-Signature"`
 	CloudFrontKeyPairID string `json:"CloudFront-Key-Pair-Id"`
-}
-
-type Author struct {
-	ID   int64  `json:"id"`
-	View string `json:"_view"`
 }

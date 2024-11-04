@@ -1,11 +1,12 @@
 package ofapi
 
 import (
-	"encoding/json"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/yinyajiang/gof"
 	"github.com/yinyajiang/gof/common"
@@ -28,7 +29,7 @@ func NewOFAPI(config Config) (*OFApi, error) {
 		return nil, errors.New("AuthInfo is invalid")
 	}
 
-	rules, err := loadRules(config.RulesCacheDir, config.OptionalRulesURL)
+	rules, err := LoadRules(config.RulesCacheDir, config.OptionalRulesURL, config.CachePriority)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +61,38 @@ func (c *OFApi) GetMe() (model.User, error) {
 	return c.GetUser("me")
 }
 
-func (c *OFApi) GetUserHightlights(userID int64, withStories ...bool) ([]model.Highlight, error) {
+func (c *OFApi) GetChatMessages(userID int64) ([]model.Post, error) {
+	var result []model.Post
+	var nextID *int64
+	var hasMore = true
+	var err error
+	for hasMore {
+		param := map[string]string{
+			"limit": "50",
+			"order": "desc",
+		}
+		if nextID != nil {
+			param["id"] = strconv.FormatInt(*nextID, 10)
+		}
+
+		var moreList moreList[model.Post]
+		err = c.req.GetUnmarshal(ApiURLPath("/chats/%d/messages", userID), param, &moreList)
+		if err != nil {
+			break
+		}
+		hasMore = moreList.HasMore
+		if len(moreList.List) != 0 {
+			nextID = &moreList.List[len(moreList.List)-1].ID
+			result = append(result, moreList.List...)
+		}
+	}
+	if len(result) != 0 {
+		return result, nil
+	}
+	return nil, err
+}
+
+func (c *OFApi) GetUserHightlights(userID int64, withStories bool) ([]model.Highlight, error) {
 	var err error
 	hasMore := true
 	offset := 0
@@ -78,7 +110,7 @@ func (c *OFApi) GetUserHightlights(userID int64, withStories ...bool) ([]model.H
 		hasMore = moreList.HasMore
 		offset += len(moreList.List)
 
-		if len(withStories) != 0 && withStories[0] {
+		if withStories {
 			for _, highlight := range moreList.List {
 				highlight, e := c.GetHighlight(highlight.ID)
 				if e == nil {
@@ -155,49 +187,55 @@ func (c *OFApi) GetUserMedias(userID int64) ([]model.Post, error) {
 	return c.GetUserMediasByTime(userID, time.Now(), TimeDirectionBefore)
 }
 
+func (c *OFApi) GetUserStreams(userID int64) ([]model.Post, error) {
+	return c.GetUserStreamsByTime(userID, time.Now(), TimeDirectionBefore)
+}
+
+func (c *OFApi) GetUserArchived(userID int64) ([]model.Post, error) {
+	return c.GetUserArchivedByTime(userID, time.Now(), TimeDirectionBefore)
+}
+
+func (c *OFApi) GetUserArchivedByTime(userID int64, timePoint time.Time, timeDirection TimeDirection) ([]model.Post, error) {
+	return c.getUserPostsByEndPointAndTime(userID, "/posts", map[string]string{
+		"skip_users": "all",
+		"label":      "archived",
+		"counters":   "1",
+	}, timePoint, timeDirection)
+}
+
+func (c *OFApi) GetUserStreamsByTime(userID int64, timePoint time.Time, timeDirection TimeDirection) ([]model.Post, error) {
+	return c.getUserPostsByEndPointAndTime(userID, "/posts/streams", nil, timePoint, timeDirection)
+}
+
 func (c *OFApi) GetUserMediasByTime(userID int64, timePoint time.Time, timeDirection TimeDirection) ([]model.Post, error) {
-	param := initPublishTimeParam(map[string]string{
-		"limit":      "50",
-		"order":      "publish_date_desc",
-		"format":     "infinite",
+	return c.getUserPostsByEndPointAndTime(userID, "/posts/medias", map[string]string{
 		"skip_users": "all",
 	}, timePoint, timeDirection)
-
-	var result []model.Post
-	var err error
-	hasMore := true
-	for hasMore {
-		var moreList moreList[model.Post]
-		err = c.req.GetUnmarshal(ApiURLPath("/users/%d/posts/medias", userID),
-			param, &moreList)
-		if err != nil {
-			break
-		}
-
-		hasMore = moreList.HasMore
-		result = append(result, moreList.List...)
-
-		updatePublishTimeParam(param, timeDirection, moreList.moreMarker)
-	}
-	if len(result) != 0 {
-		return result, nil
-	}
-	return nil, err
 }
 
 func (c *OFApi) GetUserPostsByTime(userID int64, timePoint time.Time, timeDirection TimeDirection) ([]model.Post, error) {
+	return c.getUserPostsByEndPointAndTime(userID, "/posts", nil, timePoint, timeDirection)
+}
+
+func (c *OFApi) getUserPostsByEndPointAndTime(userID int64, endpoint string, mergeParam map[string]string, timePoint time.Time, timeDirection TimeDirection) ([]model.Post, error) {
 	param := initPublishTimeParam(map[string]string{
 		"limit":  "50",
 		"order":  "publish_date_desc",
 		"format": "infinite",
 	}, timePoint, timeDirection)
 
+	if mergeParam != nil {
+		param = maputil.Merge(param, mergeParam)
+	}
+
+	endpoint = strings.Trim(endpoint, "/")
+
 	var result []model.Post
 	var err error
 	hasMore := true
 	for hasMore {
 		var moreList moreList[model.Post]
-		err = c.req.GetUnmarshal(ApiURLPath("/users/%d/posts", userID), param, &moreList)
+		err = c.req.GetUnmarshal(ApiURLPath("/users/%d/%s", userID, endpoint), param, &moreList)
 		if err != nil {
 			break
 		}
@@ -334,18 +372,24 @@ func (c *OFApi) GetUserByUsername(username string) (model.User, error) {
 	return c.GetUser(username)
 }
 
+func (c *OFApi) GetUserByID(userID int64) (model.User, error) {
+	var um map[string]model.User
+	err := c.req.GetUnmarshal(ApiURLPath("/users/list?x[]=%d", userID), nil, &um)
+	if err != nil {
+		return model.User{}, err
+	}
+	user, ok := um[strconv.FormatInt(userID, 10)]
+	if !ok {
+		return model.User{}, errors.New("user not found")
+	}
+	return user, nil
+}
+
 func (c *OFApi) GetUser(userEndpoint string) (model.User, error) {
-	data, err := c.req.Get(ApiURLPath("/users/%s", userEndpoint), map[string]string{
+	var user model.User
+	err := c.req.GetUnmarshal(ApiURLPath("/users/%s", userEndpoint), map[string]string{
 		"limit": "50",
 		"order": "publish_date_asc",
-	})
-	if err != nil {
-		return model.User{}, err
-	}
-	var userInfo model.User
-	err = json.Unmarshal(data, &userInfo)
-	if err != nil {
-		return model.User{}, err
-	}
-	return userInfo, nil
+	}, &user)
+	return user, err
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/yinyajiang/gof/common"
 )
 
-func loadClient(cacheDir string, clientIDURL, clientPrivateKeyURL string, cachePriority ...bool) (clientID, clientPrivateKey []byte, err error) {
+func LoadClient(cacheDir string, clientIDURL, clientPrivateKeyURL string, cachePriority ...bool) (clientID, clientPrivateKey []byte, err error) {
 	if len(cachePriority) > 0 && cachePriority[0] {
 		clientID, clientPrivateKey, e := loadCachedClient(cacheDir)
 		if e == nil {

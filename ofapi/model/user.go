@@ -5,6 +5,7 @@ import "time"
 type User struct {
 	AgeVerificationRequired   any            `json:"ageVerificationRequired"`
 	View                      string         `json:"view"`
+	View_                     string         `json:"_view"`
 	Avatar                    string         `json:"avatar"`
 	AvatarThumbs              AvatarThumbs   `json:"avatarThumbs"`
 	Header                    any            `json:"header"`
@@ -42,6 +43,7 @@ type User struct {
 	SubscribedByExpireDate    time.Time      `json:"subscribedByExpireDate"`
 	SubscribedByAutoprolong   any            `json:"subscribedByAutoprolong"`
 	SubscribedIsExpiredNow    bool           `json:"subscribedIsExpiredNow"`
+	SubscriptionBundles       []interface{}  `json:"subscriptionBundles"`
 	CurrentSubscribePrice     any            `json:"currentSubscribePrice"`
 	SubscribedOn              any            `json:"subscribedOn"`
 	SubscribedOnExpiredNow    any            `json:"subscribedOnExpiredNow"`
@@ -111,4 +113,10 @@ type HeaderSize struct {
 type HeaderThumbs struct {
 	W480 string `json:"w480"`
 	W760 string `json:"w760"`
+}
+
+type Author struct {
+	ID    int64  `json:"id"`
+	View  string `json:"view"`
+	View_ string `json:"_view"`
 }
