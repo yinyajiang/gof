@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -54,31 +53,26 @@ func (r *Req) GetUnmarshal(urlpath string, params any, pointer any) (err error) 
 	return err
 }
 
-func (r *Req) buildSignedRequest(method, urlpath string, params any, body_ ...[]byte) (*http.Request, error) {
-	switch params := any(params).(type) {
-	case string:
-		params = strings.TrimLeft(params, "?")
-		if params != "" {
-			if strings.Contains(urlpath, "?") {
-				urlpath = urlpath + "&" + params
-			} else {
-				urlpath = urlpath + "?" + params
-			}
-		}
-	case map[string]string:
-		if len(params) > 0 {
-			query := url.Values{}
-			for k, v := range params {
-				query.Add(k, v)
-			}
-			if strings.Contains(urlpath, "?") {
-				urlpath = urlpath + "&" + query.Encode()
-			} else {
-				urlpath = urlpath + "?" + query.Encode()
-			}
-		}
+func (r *Req) GetFileInfo(u string) (common.HttpFileInfo, error) {
+	if common.MaybeDrmURL(u) {
+		err := fmt.Errorf("[warning] url(%s) maybe drm url, use ofdrm.GetFileInfo instead", u)
+		return common.HttpFileInfo{}, err
 	}
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return common.HttpFileInfo{}, err
+	}
+	req.Header.Set("User-Agent", r.authInfo.UserAgent)
+	resp, _, err := common.HttpDo(req, false)
+	if err != nil {
+		return common.HttpFileInfo{}, err
+	}
+	resp.Body.Close()
+	return common.ParseHttpFileInfo(resp), nil
+}
 
+func (r *Req) buildSignedRequest(method, urlpath string, params any, body_ ...[]byte) (*http.Request, error) {
+	urlpath = common.HttpComposeParams(urlpath, params)
 	var body io.Reader
 	if len(body_) > 0 {
 		body = io.NopCloser(bytes.NewReader(body_[0]))

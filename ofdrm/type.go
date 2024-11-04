@@ -1,6 +1,8 @@
 package ofdrm
 
-import "github.com/yinyajiang/gof/ofapi/model"
+import (
+	"github.com/yinyajiang/gof/ofapi/model"
+)
 
 type DRMInfo struct {
 	model.Drm

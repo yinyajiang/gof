@@ -3,9 +3,11 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/yinyajiang/gof"
 )
@@ -70,4 +72,21 @@ func MustMarshalJSON(v any) []byte {
 
 func MustUnmarshalJSONStr(v any) string {
 	return string(MustMarshalJSON(v))
+}
+
+func ParseHttpFileInfo(resp *http.Response) HttpFileInfo {
+	var headerInfo HttpFileInfo
+	lastModified, err := time.Parse(time.RFC1123, resp.Header.Get("Last-Modified"))
+	if err != nil {
+		headerInfo.LastModified = time.Now()
+		fmt.Printf("parse last modified: %v\n", err)
+	} else {
+		headerInfo.LastModified = lastModified.Local()
+	}
+	headerInfo.ContentLength = resp.ContentLength
+	return headerInfo
+}
+
+func MaybeDrmURL(u string) bool {
+	return strings.Contains(u, gof.OFDrmMaybe)
 }

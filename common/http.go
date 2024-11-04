@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 func AddHeaders(req *http.Request, addHeaders, setHeaders map[string]string) {
@@ -68,4 +70,31 @@ func HttpGetUnmarshal(url string, pointer any) error {
 		err = fmt.Errorf("unmarshal %s failed, err: %v, data: %s", url, err, string(data))
 	}
 	return err
+}
+
+func HttpComposeParams(urlpath string, params any) string {
+	switch params := any(params).(type) {
+	case string:
+		params = strings.TrimLeft(params, "?")
+		if params != "" {
+			if strings.Contains(urlpath, "?") {
+				urlpath = urlpath + "&" + params
+			} else {
+				urlpath = urlpath + "?" + params
+			}
+		}
+	case map[string]string:
+		if len(params) > 0 {
+			query := url.Values{}
+			for k, v := range params {
+				query.Add(k, v)
+			}
+			if strings.Contains(urlpath, "?") {
+				urlpath = urlpath + "&" + query.Encode()
+			} else {
+				urlpath = urlpath + "?" + query.Encode()
+			}
+		}
+	}
+	return urlpath
 }

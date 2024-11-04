@@ -167,13 +167,17 @@ func (c *OFApi) GetPaidPosts() ([]model.Post, error) {
 	return result, err
 }
 
-func (c *OFApi) GetPost(postURL string) (model.Post, error) {
+func (c *OFApi) GetPostByUrl(postURL string) (model.Post, error) {
 	postURLInfo, err := common.ParseSinglePostURL(postURL)
 	if err != nil {
 		return model.Post{}, err
 	}
+	return c.GetPost(postURLInfo.PostID)
+}
+
+func (c *OFApi) GetPost(postID any) (model.Post, error) {
 	var post model.Post
-	err = c.req.GetUnmarshal(ApiURLPath("/posts/%s", postURLInfo.PostID), map[string]string{
+	err := c.req.GetUnmarshal(ApiURLPath("/posts/%v", postID), map[string]string{
 		"skip_users": "all",
 	}, &post)
 	return post, err
@@ -392,4 +396,8 @@ func (c *OFApi) GetUser(userEndpoint string) (model.User, error) {
 		"order": "publish_date_asc",
 	}, &user)
 	return user, err
+}
+
+func (c *OFApi) GetFileInfo(url string) (common.HttpFileInfo, error) {
+	return c.req.GetFileInfo(url)
 }

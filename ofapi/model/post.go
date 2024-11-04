@@ -84,11 +84,11 @@ type Media struct {
 }
 
 type Files struct {
-	Full          FileInfo `json:"full"`
-	Thumb         FileInfo `json:"thumb"`
-	Preview       FileInfo `json:"preview"`
-	SquarePreview FileInfo `json:"squarePreview"`
-	Drm           Drm      `json:"drm"`
+	Full          *FileInfo `json:"full"`
+	Thumb         *FileInfo `json:"thumb"`
+	Preview       *FileInfo `json:"preview"`
+	SquarePreview *FileInfo `json:"squarePreview"`
+	Drm           *Drm      `json:"drm"`
 }
 
 type FileInfo struct {

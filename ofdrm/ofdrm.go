@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/antchfx/xmlquery"
 	"github.com/duke-git/lancet/v2/slice"
@@ -49,18 +48,22 @@ func NewOFDRM(req *ofapi.Req, config OFDRMConfig) (*OFDRM, error) {
 	}, nil
 }
 
-func (c *OFDRM) GetVideoDecryptedKeyAuto(drm DRMInfo) (string, error) {
+func (c *OFDRM) Req() *ofapi.Req {
+	return c.req
+}
+
+func (c *OFDRM) GetDecryptedKeyAuto(drm DRMInfo) (string, error) {
 	var clientErr error
 	var key string
 	if len(c.cfg.ClientID) != 0 {
-		key, clientErr = c.GetVideoDecryptedKeyByClient(drm)
+		key, clientErr = c.GetDecryptedKeyByClient(drm)
 		if clientErr == nil {
 			return key, nil
 		}
 		fmt.Println("failed to get decrypted key by client: ", clientErr)
 	}
 
-	key, serverErr := c.GetVideoDecryptedKeyByServer(drm)
+	key, serverErr := c.GetDecryptedKeyByServer(drm)
 	if serverErr == nil {
 		return key, nil
 	}
@@ -72,7 +75,7 @@ func (c *OFDRM) GetVideoDecryptedKeyAuto(drm DRMInfo) (string, error) {
 	return "", serverErr
 }
 
-func (c *OFDRM) GetVideoDecryptedKeyByClient(drm DRMInfo) (string, error) {
+func (c *OFDRM) GetDecryptedKeyByClient(drm DRMInfo) (string, error) {
 	pssh, err := c.getDRMPSSH(drm)
 	if err != nil {
 		return "", err
@@ -88,20 +91,16 @@ func (c *OFDRM) GetVideoDecryptedKeyByClient(drm DRMInfo) (string, error) {
 	return decryptedKey, nil
 }
 
-func (c *OFDRM) GetVideoLastModified(drm DRMInfo) (time.Time, error) {
-	lastModified, err := c.unsignedGetHeader(drm, "Last-Modified")
+func (c *OFDRM) GetFileInfo(drm DRMInfo) (common.HttpFileInfo, error) {
+	resp, _, err := c.drmHttpGetResp(drm, false)
 	if err != nil {
-		fmt.Println("failed to get last modified: ", err)
-		return time.Now(), err
+		return common.HttpFileInfo{}, err
 	}
-	lastModifiedTime, err := time.Parse(time.RFC1123, lastModified)
-	if err != nil {
-		return time.Now(), fmt.Errorf("parse last modified: %w", err)
-	}
-	return lastModifiedTime.Local(), nil
+	resp.Body.Close()
+	return common.ParseHttpFileInfo(resp), nil
 }
 
-func (c *OFDRM) GetVideoDecryptedKeyByServer(drm DRMInfo) (string, error) {
+func (c *OFDRM) GetDecryptedKeyByServer(drm DRMInfo) (string, error) {
 	const fixedServerURL = "https://cdrm-project.com/"
 
 	serverURLs := c.cfg.OptionalCDRMProjectServer
@@ -166,7 +165,7 @@ func (c *OFDRM) drmURLPath(drm DRMInfo) string {
 }
 
 func (c *OFDRM) getDRMPSSH(drm DRMInfo) (string, error) {
-	data, err := c.unsignedGet(drm)
+	data, err := c.drmHttpGet(drm)
 	if err != nil {
 		return "", err
 	}
@@ -243,21 +242,12 @@ func (c *OFDRM) loadWidevineServiceCert(urlpath string) (*widevinepb.DrmCertific
 	return cert, nil
 }
 
-func (c *OFDRM) unsignedGet(drm DRMInfo) (body []byte, err error) {
-	_, body, err = c.unsignedGetResp(drm, true)
+func (c *OFDRM) drmHttpGet(drm DRMInfo) (body []byte, err error) {
+	_, body, err = c.drmHttpGetResp(drm, true)
 	return
 }
 
-func (c *OFDRM) unsignedGetHeader(drm DRMInfo, key string) (h string, err error) {
-	resp, _, err := c.unsignedGetResp(drm, false)
-	if err != nil {
-		return "", err
-	}
-	resp.Body.Close()
-	return resp.Header.Get(key), nil
-}
-
-func (c *OFDRM) unsignedGetResp(drm DRMInfo, readAll ...bool) (resp *http.Response, body []byte, err error) {
+func (c *OFDRM) drmHttpGetResp(drm DRMInfo, readAll ...bool) (resp *http.Response, body []byte, err error) {
 	req, err := http.NewRequest("GET", drm.Drm.Manifest.Dash, nil)
 	if err != nil {
 		return nil, nil, err
