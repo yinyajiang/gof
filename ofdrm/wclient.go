@@ -8,7 +8,14 @@ import (
 	"github.com/yinyajiang/gof/common"
 )
 
-func loadClient(cacheDir string, clientIDURL, clientPrivateKeyURL string) (clientID, clientPrivateKey []byte, err error) {
+func loadClient(cacheDir string, clientIDURL, clientPrivateKeyURL string, cachePriority ...bool) (clientID, clientPrivateKey []byte, err error) {
+	if len(cachePriority) > 0 && cachePriority[0] {
+		clientID, clientPrivateKey, e := loadCachedClient(cacheDir)
+		if e == nil {
+			return clientID, clientPrivateKey, nil
+		}
+	}
+
 	if clientIDURL != "" && clientPrivateKeyURL != "" {
 		wg := sync.WaitGroup{}
 		wg.Add(2)

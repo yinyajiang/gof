@@ -15,7 +15,14 @@ import (
 	"github.com/yinyajiang/gof/common"
 )
 
-func loadRules(cacheDir string, rulesURL []string) (rules, error) {
+func loadRules(cacheDir string, rulesURL []string, cachePriority ...bool) (rules, error) {
+	if len(cachePriority) > 0 && cachePriority[0] {
+		cachedRules, e := loadCachedRules(cacheDir)
+		if e == nil {
+			return cachedRules, nil
+		}
+	}
+
 	var allRules []rules
 
 	urlRules, urlErr := loadURLRules(rulesURL)

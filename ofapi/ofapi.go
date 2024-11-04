@@ -20,6 +20,7 @@ type Config struct {
 	AuthInfo         gof.AuthInfo
 	OptionalRulesURL []string
 	RulesCacheDir    string
+	CachePriority    bool
 }
 
 func NewOFAPI(config Config) (*OFApi, error) {
