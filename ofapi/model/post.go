@@ -88,7 +88,7 @@ type Files struct {
 	Thumb         *FileInfo `json:"thumb"`
 	Preview       *FileInfo `json:"preview"`
 	SquarePreview *FileInfo `json:"squarePreview"`
-	Drm           *Drm      `json:"drm"`
+	Drm           *DRM      `json:"drm"`
 }
 
 type FileInfo struct {
@@ -112,7 +112,7 @@ type VideoSources struct {
 	Resolution240 interface{} `json:"240"`
 }
 
-type Drm struct {
+type DRM struct {
 	Manifest  Manifest  `json:"manifest"`
 	Signature Signature `json:"signature"`
 }

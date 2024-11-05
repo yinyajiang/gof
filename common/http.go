@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 func AddHeaders(req *http.Request, addHeaders, setHeaders map[string]string) {
@@ -23,10 +24,26 @@ func IsSuccessfulStatusCode(statusCode int) bool {
 	return statusCode >= 200 && statusCode < 300
 }
 
+var proxy *url.URL
+
+func SetProxy(proxyURL string) {
+	if proxyURL == "" {
+		return
+	}
+	u, err := url.Parse(proxyURL)
+	if err != nil {
+		return
+	}
+	proxy = u
+}
+
 func HttpClient() *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			Proxy: func(*http.Request) (*url.URL, error) {
+				return proxy, nil
+			},
 		},
 	}
 }
@@ -97,4 +114,17 @@ func HttpComposeParams(urlpath string, params any) string {
 		}
 	}
 	return urlpath
+}
+
+func ParseHttpFileInfo(resp *http.Response) HttpFileInfo {
+	var headerInfo HttpFileInfo
+	lastModified, err := time.Parse(time.RFC1123, resp.Header.Get("Last-Modified"))
+	if err != nil {
+		headerInfo.LastModified = time.Now()
+		fmt.Printf("parse last modified: %v\n", err)
+	} else {
+		headerInfo.LastModified = lastModified.Local()
+	}
+	headerInfo.ContentLength = resp.ContentLength
+	return headerInfo
 }

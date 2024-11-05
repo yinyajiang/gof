@@ -247,17 +247,20 @@ func (c *OFDRM) drmHttpGet(drm DRMInfo) (body []byte, err error) {
 	return
 }
 
+func (c *OFDRM) HTTPHeaders(drm DRMInfo) map[string]string {
+	return c.req.UnsignedHeaders(map[string]string{
+		"Cookie": fmt.Sprintf("CloudFront-Policy=%s; CloudFront-Signature=%s; CloudFront-Key-Pair-Id=%s",
+			drm.DRM.Signature.Dash.CloudFrontPolicy,
+			drm.DRM.Signature.Dash.CloudFrontSignature,
+			drm.DRM.Signature.Dash.CloudFrontKeyPairID),
+	})
+}
+
 func (c *OFDRM) drmHttpGetResp(drm DRMInfo, readAll ...bool) (resp *http.Response, body []byte, err error) {
-	req, err := http.NewRequest("GET", drm.Drm.Manifest.Dash, nil)
+	req, err := http.NewRequest("GET", drm.DRM.Manifest.Dash, nil)
 	if err != nil {
 		return nil, nil, err
 	}
-	header := c.req.UnsignedHeaders(map[string]string{
-		"Cookie": fmt.Sprintf("CloudFront-Policy=%s; CloudFront-Signature=%s; CloudFront-Key-Pair-Id=%s",
-			drm.Drm.Signature.Dash.CloudFrontPolicy,
-			drm.Drm.Signature.Dash.CloudFrontSignature,
-			drm.Drm.Signature.Dash.CloudFrontKeyPairID),
-	})
-	common.AddHeaders(req, nil, header)
+	common.AddHeaders(req, nil, c.HTTPHeaders(drm))
 	return common.HttpDo(req, readAll...)
 }

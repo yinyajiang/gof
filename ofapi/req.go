@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,6 +21,10 @@ import (
 type Req struct {
 	authInfo gof.AuthInfo
 	rules    rules
+}
+
+func (r *Req) UserAgent() string {
+	return r.authInfo.UserAgent
 }
 
 func (r *Req) Post(urlpath string, params any, body []byte) (data []byte, err error) {
@@ -58,11 +63,10 @@ func (r *Req) GetFileInfo(u string) (common.HttpFileInfo, error) {
 		err := fmt.Errorf("[warning] url(%s) maybe drm url, use ofdrm.GetFileInfo instead", u)
 		return common.HttpFileInfo{}, err
 	}
-	req, err := http.NewRequest("GET", u, nil)
+	req, err := r.buildUARequest("GET", u, nil)
 	if err != nil {
 		return common.HttpFileInfo{}, err
 	}
-	req.Header.Set("User-Agent", r.authInfo.UserAgent)
 	resp, _, err := common.HttpDo(req, false)
 	if err != nil {
 		return common.HttpFileInfo{}, err
@@ -72,18 +76,33 @@ func (r *Req) GetFileInfo(u string) (common.HttpFileInfo, error) {
 }
 
 func (r *Req) buildSignedRequest(method, urlpath string, params any, body_ ...[]byte) (*http.Request, error) {
-	urlpath = common.HttpComposeParams(urlpath, params)
+	req, err := r.buildRequest(method, &urlpath, params, body_...)
+	if err != nil {
+		return nil, err
+	}
+	common.AddHeaders(req, r.SignedHeaders(urlpath), nil)
+	return req, nil
+}
+
+func (r *Req) buildUARequest(method, urlpath string, params any, body_ ...[]byte) (*http.Request, error) {
+	req, err := r.buildRequest(method, &urlpath, params, body_...)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", r.authInfo.UserAgent)
+	return req, nil
+}
+
+func (r *Req) buildRequest(method string, urlpath *string, params any, body_ ...[]byte) (*http.Request, error) {
+	if urlpath == nil {
+		return nil, errors.New("urlpath is nil")
+	}
+	*urlpath = common.HttpComposeParams(*urlpath, params)
 	var body io.Reader
 	if len(body_) > 0 {
 		body = io.NopCloser(bytes.NewReader(body_[0]))
 	}
-	req, err := http.NewRequest(method, ApiURL(urlpath), body)
-	if err != nil {
-		return nil, err
-	}
-
-	common.AddHeaders(req, r.SignedHeaders(urlpath), nil)
-	return req, nil
+	return http.NewRequest(method, ApiURL(*urlpath), body)
 }
 
 func (r *Req) UnsignedHeaders(mergedHeaders map[string]string) map[string]string {

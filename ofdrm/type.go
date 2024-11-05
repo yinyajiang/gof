@@ -5,7 +5,7 @@ import (
 )
 
 type DRMInfo struct {
-	model.Drm
+	model.DRM
 	MediaID int64
 	PostID  int64
 }
