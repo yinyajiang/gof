@@ -22,6 +22,17 @@ const (
 	UserMediasAll   UserMedias = 2
 )
 
+type BookmarkMedia int
+
+const (
+	BookmarkPhotos BookmarkMedia = 0
+	BookmarkVideos BookmarkMedia = 1
+	BookmarkAudios BookmarkMedia = 2
+	BookmarkOther  BookmarkMedia = 3
+	BookmarkLocked BookmarkMedia = 4
+	BookmarkAll    BookmarkMedia = 5
+)
+
 type SubscribeFilter func(sub model.Subscription) bool
 
 func SubscribeRestrictedFilter(includeRestricted bool) SubscribeFilter {

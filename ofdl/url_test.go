@@ -90,11 +90,57 @@ func TestOFURL(t *testing.T) {
 		"https://onlyfans.com/my/collections/bookmarks/all?test=test",
 	}
 
+	allBookmarkByMediaTypeURLs := []testFindKeyURLSt{
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/photos", key: "MediaType", value: "photos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/photos/", key: "MediaType", value: "photos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/photos/?test=test", key: "MediaType", value: "photos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/photos?test=test", key: "MediaType", value: "photos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/videos", key: "MediaType", value: "videos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/videos/", key: "MediaType", value: "videos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/videos/?test=test", key: "MediaType", value: "videos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/videos?test=test", key: "MediaType", value: "videos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/audios", key: "MediaType", value: "audios"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/audios/", key: "MediaType", value: "audios"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/audios/?test=test", key: "MediaType", value: "audios"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/audios?test=test", key: "MediaType", value: "audios"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/other", key: "MediaType", value: "other"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/other/", key: "MediaType", value: "other"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/other/?test=test", key: "MediaType", value: "other"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/other?test=test", key: "MediaType", value: "other"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/locked", key: "MediaType", value: "locked"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/locked/", key: "MediaType", value: "locked"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/locked/?test=test", key: "MediaType", value: "locked"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/locked?test=test", key: "MediaType", value: "locked"},
+	}
+
 	singleBookmarkURLs := []testFindKeyURLSt{
 		{url: "https://onlyfans.com/my/collections/bookmarks/1979194", key: "ID", value: "1979194"},
 		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/", key: "ID", value: "1979194"},
 		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/?test=test", key: "ID", value: "1979194"},
 		{url: "https://onlyfans.com/my/collections/bookmarks/1979194?test=test", key: "ID", value: "1979194"},
+	}
+
+	singleBookmarkByMediaTypeURLs := []testFindKeyURLSt2{
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/photos", key1: "ID", value1: "1979194", key2: "MediaType", value2: "photos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/photos/", key1: "ID", value1: "1979194", key2: "MediaType", value2: "photos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/photos/?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "photos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/photos?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "photos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/videos", key1: "ID", value1: "1979194", key2: "MediaType", value2: "videos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/videos/", key1: "ID", value1: "1979194", key2: "MediaType", value2: "videos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/videos/?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "videos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/videos?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "videos"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/audios", key1: "ID", value1: "1979194", key2: "MediaType", value2: "audios"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/audios/", key1: "ID", value1: "1979194", key2: "MediaType", value2: "audios"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/audios/?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "audios"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/audios?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "audios"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/other", key1: "ID", value1: "1979194", key2: "MediaType", value2: "other"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/other/", key1: "ID", value1: "1979194", key2: "MediaType", value2: "other"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/other/?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "other"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/other?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "other"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/locked", key1: "ID", value1: "1979194", key2: "MediaType", value2: "locked"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/locked/", key1: "ID", value1: "1979194", key2: "MediaType", value2: "locked"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/locked/?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "locked"},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/locked?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "locked"},
 	}
 
 	for _, url := range homeURLs {
@@ -113,7 +159,9 @@ func TestOFURL(t *testing.T) {
 	testFindKeyURLs(t, reUserVideos, userVideosURLs)
 	testFindKeyURLs(t, reUserPhotos, userPhotosURLs)
 	testMatchURLs(t, reAllBookmarks, allBookmarkURLs)
+	testFindKeyURLs(t, reAllBookmarksByMediaType, allBookmarkByMediaTypeURLs)
 	testFindKeyURLs(t, reSingleBookmark, singleBookmarkURLs)
+	testFindKey2URLs(t, reSingleBookmarkByMediaType, singleBookmarkByMediaTypeURLs)
 
 	testNotMatchURLs(t, reSubscriptions, homeURLs)
 	testNotMatchURLs(t, reChats, homeURLs)
@@ -124,6 +172,8 @@ func TestOFURL(t *testing.T) {
 	testNotMatchURLs(t, reUserMedia, homeURLs)
 	testNotMatchURLs(t, reAllBookmarks, homeURLs)
 	testNotMatchURLs(t, reSingleBookmark, homeURLs)
+	testNotMatchURLs(t, reAllBookmarksByMediaType, homeURLs)
+	testNotMatchURLs(t, reSingleBookmarkByMediaType, homeURLs)
 
 	testNotMatchURLs(t, reChats, subscriptionsURLs)
 	testNotMatchURLs(t, reSingleChat, subscriptionsURLs)
@@ -135,6 +185,8 @@ func TestOFURL(t *testing.T) {
 	testNotMatchURLs(t, reUserPhotos, subscriptionsURLs)
 	testNotMatchURLs(t, reAllBookmarks, subscriptionsURLs)
 	testNotMatchURLs(t, reSingleBookmark, subscriptionsURLs)
+	testNotMatchURLs(t, reAllBookmarksByMediaType, subscriptionsURLs)
+	testNotMatchURLs(t, reSingleBookmarkByMediaType, subscriptionsURLs)
 
 	testNotMatchURLs(t, reSubscriptions, chartsURLs)
 	testNotMatchURLs(t, reSingleChat, chartsURLs)
@@ -146,6 +198,8 @@ func TestOFURL(t *testing.T) {
 	testNotMatchURLs(t, reUserPhotos, chartsURLs)
 	testNotMatchURLs(t, reAllBookmarks, chartsURLs)
 	testNotMatchURLs(t, reSingleBookmark, chartsURLs)
+	testNotMatchURLs(t, reAllBookmarksByMediaType, chartsURLs)
+	testNotMatchURLs(t, reSingleBookmarkByMediaType, chartsURLs)
 
 	testNotMatchKeyURLs(t, reSubscriptions, chatURLs)
 	testNotMatchKeyURLs(t, reChats, chatURLs)
@@ -157,6 +211,8 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKeyURLs(t, reUserPhotos, chatURLs)
 	testNotMatchKeyURLs(t, reAllBookmarks, chatURLs)
 	testNotMatchKeyURLs(t, reSingleBookmark, chatURLs)
+	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, chatURLs)
+	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, chatURLs)
 
 	testNotMatchKeyURLs(t, reSubscriptions, userListURLs)
 	testNotMatchKeyURLs(t, reChats, userListURLs)
@@ -168,6 +224,8 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKeyURLs(t, reUserVideos, userListURLs)
 	testNotMatchKeyURLs(t, reAllBookmarks, userListURLs)
 	testNotMatchKeyURLs(t, reSingleBookmark, userListURLs)
+	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, userListURLs)
+	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, userListURLs)
 
 	testNotMatchKey2URLs(t, reSubscriptions, postURLs)
 	testNotMatchKey2URLs(t, reChats, postURLs)
@@ -179,6 +237,8 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKey2URLs(t, reUserVideos, postURLs)
 	testNotMatchKey2URLs(t, reAllBookmarks, postURLs)
 	testNotMatchKey2URLs(t, reSingleBookmark, postURLs)
+	testNotMatchKey2URLs(t, reAllBookmarksByMediaType, postURLs)
+	testNotMatchKey2URLs(t, reSingleBookmarkByMediaType, postURLs)
 
 	testNotMatchKeyURLs(t, reSubscriptions, userURLs)
 	testNotMatchKeyURLs(t, reChats, userURLs)
@@ -190,6 +250,8 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKeyURLs(t, reUserVideos, userURLs)
 	testNotMatchKeyURLs(t, reAllBookmarks, userURLs)
 	testNotMatchKeyURLs(t, reSingleBookmark, userURLs)
+	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, userURLs)
+	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, userURLs)
 
 	testNotMatchKeyURLs(t, reSubscriptions, userMediaURLs)
 	testNotMatchKeyURLs(t, reChats, userMediaURLs)
@@ -201,6 +263,8 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKeyURLs(t, reUserVideos, userMediaURLs)
 	testNotMatchKeyURLs(t, reAllBookmarks, userMediaURLs)
 	testNotMatchKeyURLs(t, reSingleBookmark, userMediaURLs)
+	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, userMediaURLs)
+	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, userMediaURLs)
 
 	testNotMatchKeyURLs(t, reSubscriptions, userVideosURLs)
 	testNotMatchKeyURLs(t, reChats, userVideosURLs)
@@ -212,6 +276,8 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKeyURLs(t, reUserPhotos, userVideosURLs)
 	testNotMatchKeyURLs(t, reAllBookmarks, userVideosURLs)
 	testNotMatchKeyURLs(t, reSingleBookmark, userVideosURLs)
+	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, userVideosURLs)
+	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, userVideosURLs)
 
 	testNotMatchKeyURLs(t, reSubscriptions, userPhotosURLs)
 	testNotMatchKeyURLs(t, reChats, userPhotosURLs)
@@ -223,6 +289,8 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKeyURLs(t, reUserVideos, userPhotosURLs)
 	testNotMatchKeyURLs(t, reAllBookmarks, userPhotosURLs)
 	testNotMatchKeyURLs(t, reSingleBookmark, userPhotosURLs)
+	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, userPhotosURLs)
+	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, userPhotosURLs)
 
 	testNotMatchURLs(t, reSubscriptions, allBookmarkURLs)
 	testNotMatchURLs(t, reChats, allBookmarkURLs)
@@ -234,6 +302,8 @@ func TestOFURL(t *testing.T) {
 	testNotMatchURLs(t, reUserVideos, allBookmarkURLs)
 	testNotMatchURLs(t, reUserPhotos, allBookmarkURLs)
 	testNotMatchURLs(t, reSingleBookmark, allBookmarkURLs)
+	testNotMatchURLs(t, reAllBookmarksByMediaType, allBookmarkURLs)
+	testNotMatchURLs(t, reSingleBookmarkByMediaType, allBookmarkURLs)
 
 	testNotMatchKeyURLs(t, reSubscriptions, singleBookmarkURLs)
 	testNotMatchKeyURLs(t, reChats, singleBookmarkURLs)
@@ -245,6 +315,8 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKeyURLs(t, reUserVideos, singleBookmarkURLs)
 	testNotMatchKeyURLs(t, reUserPhotos, singleBookmarkURLs)
 	testNotMatchKeyURLs(t, reAllBookmarks, singleBookmarkURLs)
+	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, singleBookmarkURLs)
+	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, singleBookmarkURLs)
 }
 
 func testMatchURLs(t *testing.T, re *regexp.Regexp, urls []string) {

@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duke-git/lancet/v2/slice"
 	"github.com/yinyajiang/gof/ofapi/model"
 	"github.com/yinyajiang/gof/ofdrm"
 )
@@ -96,7 +95,7 @@ func parallelCollecPostsMedias(dl *OFDl, funs []collecFunc) ([]DownloadableMedia
 
 			var medias []DownloadableMedia
 			if err == nil {
-				medias, err = collecMutilMedias(dl, hintName, posts)
+				medias, err = dl.collecMutilMedias(hintName, posts)
 			}
 			if err != nil {
 				if firstErr == nil {
@@ -112,27 +111,6 @@ func parallelCollecPostsMedias(dl *OFDl, funs []collecFunc) ([]DownloadableMedia
 		return results, nil
 	}
 	return results, firstErr
-}
-
-func collecMutilMedias(dl *OFDl, hintName string, posts []model.Post) ([]DownloadableMedia, error) {
-	if len(posts) == 0 {
-		return nil, fmt.Errorf("posts is empty")
-	}
-	results := []DownloadableMedia{}
-	for _, post := range posts {
-		medias, e := dl.collectMedias(hintName, post)
-		if e == nil {
-			results = append(results, medias...)
-		}
-	}
-
-	if len(results) == 0 {
-		return nil, fmt.Errorf("no media found")
-	}
-	slice.SortBy(results, func(i, j DownloadableMedia) bool {
-		return i.Time.After(j.Time)
-	})
-	return results, nil
 }
 
 func toInt64(id any) (int64, error) {

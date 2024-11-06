@@ -188,12 +188,39 @@ func (c *OFAPI) GetPost(postID any) (model.Post, error) {
 	return post, err
 }
 
-func (c *OFAPI) GetAllBookmarkes() ([]model.Post, error) {
-	return c.getBookmarkesByEndPoint("/all")
+func (c *OFAPI) GetAllBookmarkes(bookmarkMedia BookmarkMedia) ([]model.Post, error) {
+	endpoint := "/all"
+	switch bookmarkMedia {
+	case BookmarkPhotos:
+		endpoint = "/photos"
+	case BookmarkVideos:
+		endpoint = "/videos"
+	case BookmarkAudios:
+		endpoint = "/audios"
+	case BookmarkOther:
+		endpoint = "/other"
+	case BookmarkLocked:
+		endpoint = "/locked"
+	}
+	return c.getBookmarkesByEndPoint(endpoint)
 }
 
-func (c *OFAPI) GetBookmark(bookmarkID any) ([]model.Post, error) {
-	return c.getBookmarkesByEndPoint(fmt.Sprintf("/all/%v", bookmarkID))
+func (c *OFAPI) GetBookmark(bookmarkID any, bookmarkMedia BookmarkMedia) ([]model.Post, error) {
+	endpoint := "/all"
+	switch bookmarkMedia {
+	case BookmarkPhotos:
+		endpoint = "/photos"
+	case BookmarkVideos:
+		endpoint = "/videos"
+	case BookmarkAudios:
+		endpoint = "/audios"
+	case BookmarkOther:
+		endpoint = "/other"
+	case BookmarkLocked:
+		endpoint = "/locked"
+	}
+	endpoint += fmt.Sprintf("/%v", bookmarkID)
+	return c.getBookmarkesByEndPoint(endpoint)
 }
 
 func (c *OFAPI) getBookmarkesByEndPoint(endpoint string) ([]model.Post, error) {

@@ -188,22 +188,28 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 
 	//all bookmarks
 	if ok = ofurlMatchs(url, reAllBookmarks); ok {
-		bookmarks, err := dl.api.GetAllBookmarkes()
-		if err != nil {
-			return nil, false, err
-		}
-		results, err = collecMutilMedias(dl, "bookmarks", bookmarks)
+		results, err = dl.scrapeBookmarks("", "")
+		return results, false, err
+	}
+
+	//all bookmarks by media type
+	mediaType, ok := ofurlFinds(url, "MediaType", reAllBookmarksByMediaType)
+	if ok {
+		results, err = dl.scrapeBookmarks("", mediaType)
 		return results, false, err
 	}
 
 	//single bookmark
 	bookmarkID, ok := ofurlFinds(url, "ID", reSingleBookmark)
 	if ok {
-		bookmarks, err := dl.api.GetBookmark(bookmarkID)
-		if err != nil {
-			return nil, false, err
-		}
-		results, err = collecMutilMedias(dl, "bookmark", bookmarks)
+		results, err = dl.scrapeBookmarks(bookmarkID, "")
+		return results, false, err
+	}
+
+	//single bookmark by media type
+	bookmarkID, mediaType, ok = ofurlFinds2(url, "ID", "MediaType", reSingleBookmarkByMediaType)
+	if ok {
+		results, err = dl.scrapeBookmarks(bookmarkID, mediaType)
 		return results, false, err
 	}
 
@@ -235,6 +241,21 @@ func (dl *OFDl) scrapeAll() ([]DownloadableMedia, error) {
 		})
 	}
 	return dl.scrapeUsers(users, ofapi.UserMediasAll)
+}
+
+func (dl *OFDl) scrapeBookmarks(allEmptryOrID string, allEmptryOrMediaType string) ([]DownloadableMedia, error) {
+	if allEmptryOrID == "" {
+		bookmarks, err := dl.api.GetAllBookmarkes(bookmarkMediaType(allEmptryOrMediaType))
+		if err != nil {
+			return nil, err
+		}
+		return dl.collecMutilMedias("bookmarks."+allEmptryOrMediaType, bookmarks)
+	}
+	bookmarks, err := dl.api.GetBookmark(allEmptryOrID, bookmarkMediaType(allEmptryOrMediaType))
+	if err != nil {
+		return nil, err
+	}
+	return dl.collecMutilMedias("bookmark."+allEmptryOrMediaType, bookmarks)
 }
 
 func (dl *OFDl) scrapeUserByName(userName string, userMedias ofapi.UserMedias) ([]DownloadableMedia, error) {
@@ -305,10 +326,33 @@ func (dl *OFDl) Download(dir string, media DownloadableMedia) error {
 	return nil
 }
 
+func (dl *OFDl) collecMutilMedias(hintName string, posts []model.Post) ([]DownloadableMedia, error) {
+	if len(posts) == 0 {
+		return nil, fmt.Errorf("posts is empty")
+	}
+
+	results := []DownloadableMedia{}
+	for _, post := range posts {
+		medias, e := dl.collectMedias(hintName, post)
+		if e == nil {
+			results = append(results, medias...)
+		}
+	}
+
+	if len(results) == 0 {
+		return nil, fmt.Errorf("no media found")
+	}
+	slice.SortBy(results, func(i, j DownloadableMedia) bool {
+		return i.Time.After(j.Time)
+	})
+	return results, nil
+}
+
 func (dl *OFDl) collectMedias(hintName string, post model.Post) ([]DownloadableMedia, error) {
 	if len(post.Media) == 0 {
 		return nil, fmt.Errorf("no media found")
 	}
+	hintName = strings.Trim(hintName, ".")
 
 	mediaSet := make(map[int64]DownloadableMedia)
 	for i, media := range post.Media {

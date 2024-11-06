@@ -6,21 +6,40 @@ import (
 
 	"github.com/yinyajiang/gof"
 	"github.com/yinyajiang/gof/common"
+	"github.com/yinyajiang/gof/ofapi"
 )
 
 var (
-	reSubscriptions  = _mustCompile(`/my/collections/user-lists/(?:subscribers|subscriptions)(?:/active)?`)
-	reSingleChat     = _mustCompile(`/my/chats/chat/(?P<ID>[0-9]+)$`)
-	reChats          = _mustCompile(`/my/chats$`)
-	reUserList       = _mustCompile(`/my/collections/user-lists/(?P<ID>[0-9]+)$`)
-	reSinglePost     = _mustCompile(`/(?P<PostID>[0-9]+)/(?P<UserName>[A-Za-z0-9\.\-_]+)$`)
-	reUser           = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)$`)
-	reUserMedia      = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/media$`)
-	reUserVideos     = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/videos$`)
-	reUserPhotos     = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/photos$`)
-	reAllBookmarks   = _mustCompile(`/my/collections/bookmarks(?:/all)?$`)
-	reSingleBookmark = _mustCompile(`/my/collections/bookmarks/(?P<ID>[0-9]+)$`)
+	reSubscriptions             = _mustCompile(`/my/collections/user-lists/(?:subscribers|subscriptions)(?:/active)?`)
+	reSingleChat                = _mustCompile(`/my/chats/chat/(?P<ID>[0-9]+)$`)
+	reChats                     = _mustCompile(`/my/chats$`)
+	reUserList                  = _mustCompile(`/my/collections/user-lists/(?P<ID>[0-9]+)$`)
+	reSinglePost                = _mustCompile(`/(?P<PostID>[0-9]+)/(?P<UserName>[A-Za-z0-9\.\-_]+)$`)
+	reUser                      = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)$`)
+	reUserMedia                 = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/media$`)
+	reUserVideos                = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/videos$`)
+	reUserPhotos                = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/photos$`)
+	reAllBookmarks              = _mustCompile(`/my/collections/bookmarks(?:/all)?$`)
+	reAllBookmarksByMediaType   = _mustCompile(`/my/collections/bookmarks/all/(?P<MediaType>photos|videos|audios|other|locked)$`)
+	reSingleBookmark            = _mustCompile(`/my/collections/bookmarks/(?P<ID>[0-9]+)$`)
+	reSingleBookmarkByMediaType = _mustCompile(`/my/collections/bookmarks/(?P<ID>[0-9]+)/(?P<MediaType>photos|videos|audios|other|locked)$`)
 )
+
+func bookmarkMediaType(s string) ofapi.BookmarkMedia {
+	switch s {
+	case "photos":
+		return ofapi.BookmarkPhotos
+	case "videos":
+		return ofapi.BookmarkVideos
+	case "audios":
+		return ofapi.BookmarkAudios
+	case "other":
+		return ofapi.BookmarkOther
+	case "locked":
+		return ofapi.BookmarkLocked
+	}
+	return ofapi.BookmarkAll
+}
 
 func _mustCompile(rePath string) *regexp.Regexp {
 	re := `(?i)` + regexp.QuoteMeta(gof.OFPostDomain) + rePath
