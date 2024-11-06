@@ -96,7 +96,7 @@ func parallelCollecPostsMedias(dl *OFDl, funs []collecFunc) ([]DownloadableMedia
 
 			var medias []DownloadableMedia
 			if err == nil {
-				medias, err = collecPostsMedias(dl, hintName, posts)
+				medias, err = collecMutilMedias(dl, hintName, posts)
 			}
 			if err != nil {
 				if firstErr == nil {
@@ -114,13 +114,13 @@ func parallelCollecPostsMedias(dl *OFDl, funs []collecFunc) ([]DownloadableMedia
 	return results, firstErr
 }
 
-func collecPostsMedias(dl *OFDl, hintName string, posts []model.Post) ([]DownloadableMedia, error) {
+func collecMutilMedias(dl *OFDl, hintName string, posts []model.Post) ([]DownloadableMedia, error) {
 	if len(posts) == 0 {
 		return nil, fmt.Errorf("posts is empty")
 	}
 	results := []DownloadableMedia{}
 	for _, post := range posts {
-		medias, e := dl.collectPostMedia(hintName, post)
+		medias, e := dl.collectMedias(hintName, post)
 		if e == nil {
 			results = append(results, medias...)
 		}

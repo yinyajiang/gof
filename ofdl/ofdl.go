@@ -161,7 +161,7 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 		if err != nil {
 			return nil, false, err
 		}
-		results, err = dl.collectPostMedia(userName, post)
+		results, err = dl.collectMedias(userName, post)
 		return results, true, err
 	}
 
@@ -192,7 +192,7 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 		if err != nil {
 			return nil, false, err
 		}
-		results, err = collecPostsMedias(dl, "bookmarks", bookmarks)
+		results, err = collecMutilMedias(dl, "bookmarks", bookmarks)
 		return results, false, err
 	}
 
@@ -203,7 +203,7 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 		if err != nil {
 			return nil, false, err
 		}
-		results, err = collecPostsMedias(dl, "bookmark", bookmarks)
+		results, err = collecMutilMedias(dl, "bookmark", bookmarks)
 		return results, false, err
 	}
 
@@ -305,7 +305,7 @@ func (dl *OFDl) Download(dir string, media DownloadableMedia) error {
 	return nil
 }
 
-func (dl *OFDl) collectPostMedia(hintName string, post model.Post) ([]DownloadableMedia, error) {
+func (dl *OFDl) collectMedias(hintName string, post model.Post) ([]DownloadableMedia, error) {
 	if len(post.Media) == 0 {
 		return nil, fmt.Errorf("no media found")
 	}
