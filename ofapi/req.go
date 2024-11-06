@@ -14,7 +14,6 @@ import (
 
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/yinyajiang/gof"
 	"github.com/yinyajiang/gof/common"
 )
 
@@ -25,7 +24,7 @@ func SetDebug(d bool) {
 }
 
 type Req struct {
-	authInfo gof.AuthInfo
+	authInfo AuthInfo
 	rules    rules
 }
 

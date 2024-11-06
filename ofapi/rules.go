@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/yinyajiang/gof"
 	"github.com/yinyajiang/gof/common"
 )
 
@@ -137,17 +136,17 @@ func selectLatestRules(rulesList []rules) rules {
 	return latestRules
 }
 
-func LoadAuthInfo(cacheDir string) (gof.AuthInfo, error) {
+func LoadAuthInfo(cacheDir string) (AuthInfo, error) {
 	data, err := os.ReadFile(filepath.Join(cacheDir, "auth"))
 	if err != nil {
-		return gof.AuthInfo{}, err
+		return AuthInfo{}, err
 	}
-	var auth gof.AuthInfo
+	var auth AuthInfo
 	err = json.Unmarshal(data, &auth)
 	return auth, err
 }
 
-func cacheAuthInfo(cacheDir string, auth gof.AuthInfo) {
+func cacheAuthInfo(cacheDir string, auth AuthInfo) {
 	data, err := json.Marshal(auth)
 	if err != nil {
 		fmt.Printf("marshal auth failed, err: %v\n", err)

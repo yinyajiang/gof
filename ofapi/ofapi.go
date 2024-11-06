@@ -9,7 +9,6 @@ import (
 
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/yinyajiang/gof"
 	"github.com/yinyajiang/gof/common"
 	"github.com/yinyajiang/gof/ofapi/model"
 )
@@ -19,7 +18,7 @@ type OFAPI struct {
 }
 
 type Config struct {
-	AuthInfo         gof.AuthInfo
+	AuthInfo         AuthInfo
 	OptionalRulesURL []string
 	RulesCacheDir    string
 	CachePriority    bool

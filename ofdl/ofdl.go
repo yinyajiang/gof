@@ -23,7 +23,7 @@ type DependentTools struct {
 }
 
 type Config struct {
-	AuthInfo gof.AuthInfo
+	AuthInfo ofapi.AuthInfo
 	CacheDir string
 
 	OptionalRulesURL []string
