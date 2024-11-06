@@ -218,6 +218,10 @@ func (dl *OFDl) FetchFileInfo(downloadURL string) (info common.HttpFileInfo, err
 	return dl.drmapi.GetFileInfo(parseDRMURL(downloadURL))
 }
 
+func (dl *OFDl) FetchDRMDecrypt(downloadURL string) (string, error) {
+	return dl.drmapi.GetDecryptedKeyAuto(parseDRMURL(downloadURL))
+}
+
 func (dl *OFDl) scrapeAll() ([]DownloadableMedia, error) {
 	subs, err := dl.api.GetSubscriptions(ofapi.SubscritionTypeActive)
 	if err != nil {
