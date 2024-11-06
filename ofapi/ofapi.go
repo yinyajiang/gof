@@ -256,6 +256,9 @@ func (c *OFAPI) getUserPostsByEndPointAndTime(userID int64, endpoint string, mer
 	if len(result) != 0 {
 		return result, nil
 	}
+	if err == nil {
+		err = errors.New("no posts found or subscription expired")
+	}
 	return nil, err
 }
 
@@ -265,17 +268,17 @@ func (c *OFAPI) GetCollectionsListUsers(listid string) ([]model.CollectionListUs
 	offset := 0
 	var result []model.CollectionListUser
 	for hasMore {
-		var moreList moreList[model.CollectionListUser]
+		var list []model.CollectionListUser
 		err = c.req.GetUnmarshal("/lists/"+listid+"/users", map[string]string{
 			"offset": strconv.Itoa(offset),
 			"limit":  "50",
-		}, &moreList)
+		}, &list)
 		if err != nil {
 			break
 		}
-		hasMore = moreList.HasMore
-		offset += len(moreList.List)
-		result = append(result, moreList.List...)
+		hasMore = len(list) >= 50
+		offset += len(list)
+		result = append(result, list...)
 	}
 	if len(result) != 0 {
 		return result, nil

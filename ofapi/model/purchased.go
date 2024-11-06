@@ -18,8 +18,8 @@ type purchased struct {
 	IsReportedByMe      bool      `json:"isReportedByMe"`
 	IsCouplePeopleMedia bool      `json:"isCouplePeopleMedia"`
 	QueueID             any       `json:"queueId"`
-	FromUser            Author    `json:"fromUser"`
-	Author              Author    `json:"author"`
+	FromUser            User      `json:"fromUser"`
+	Author              User      `json:"author"`
 	IsFromQueue         bool      `json:"isFromQueue"`
 	CanUnsendQueue      bool      `json:"canUnsendQueue"`
 	UnsendSecondsQueue  any       `json:"unsendSecondsQueue"`

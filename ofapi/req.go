@@ -18,6 +18,12 @@ import (
 	"github.com/yinyajiang/gof/common"
 )
 
+var debug = false
+
+func SetDebug(d bool) {
+	debug = d
+}
+
 type Req struct {
 	authInfo gof.AuthInfo
 	rules    rules
@@ -42,6 +48,9 @@ func (r *Req) Get(urlpath string, params any) (data []byte, err error) {
 		return nil, err
 	}
 	_, data, err = common.HttpDo(req, true)
+	if debug {
+		fmt.Println(string(data))
+	}
 	return
 }
 
@@ -50,6 +59,7 @@ func (r *Req) GetUnmarshal(urlpath string, params any, pointer any) (err error) 
 	if err != nil {
 		return err
 	}
+
 	err = json.Unmarshal(data, pointer)
 	if err != nil {
 		fmt.Printf("urlpath: %s, data unmarshal error: %v\n", urlpath, err)

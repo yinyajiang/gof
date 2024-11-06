@@ -46,6 +46,9 @@ type Post struct {
 	CanViewMedia        bool      `json:"canViewMedia"`
 	Preview             []any     `json:"preview"`
 
+	//message
+	FromUser User `json:"fromUser"`
+
 	//Fields with the same name when deserialized, anonymous members of the structure are not assigned values
 	purchased
 }

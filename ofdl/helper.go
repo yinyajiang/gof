@@ -2,70 +2,28 @@ package ofdl
 
 import (
 	"fmt"
-	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/yinyajiang/gof"
 	"github.com/yinyajiang/gof/ofapi/model"
 	"github.com/yinyajiang/gof/ofdrm"
 )
 
-func correctURL(url string) string {
-	if i := strings.Index(url, "?"); i != -1 {
-		url = url[:i]
-	}
-	if !strings.HasPrefix(url, "https://") {
-		url = "https://" + url
-	}
-	url = strings.Replace(strings.TrimSpace(url), "www.", "", 1)
-	return url
-}
-
-func isHomeURL(url string) bool {
-	url = correctURL(url)
-	return strings.TrimRight(url, "/") == strings.TrimRight(gof.OFPostDomain, "/")
-}
-
-func reUrlPathParse(ori string, rePath string, minSplit int) (pu *url.URL, splitPaths []string, err error) {
-	u := correctURL(ori)
-	if rePath != "" && !strings.HasPrefix(rePath, "/") {
-		rePath = "/" + rePath
-	}
-	re := `(?i)` + regexp.QuoteMeta(gof.OFPostDomain) + rePath
-	regex := regexp.MustCompile(re)
-	if !regex.MatchString(u) {
-		return nil, nil, fmt.Errorf("invalid url: %s, for regex: %s", ori, re)
-	}
-	pu, err = url.Parse(u)
-	if err != nil {
-		return nil, nil, err
-	}
-	splitPaths = strings.Split(strings.TrimLeft(pu.Path, "/"), "/")
-	if minSplit > 0 {
-		if len(splitPaths) < minSplit {
-			return nil, nil, fmt.Errorf("invalid url path length: %d, %s", len(splitPaths), ori)
-		}
-	}
-	return pu, splitPaths, nil
-}
-
-func composeDRMURL(mediaID int64, postID int64, drm model.DRM) string {
+func composeDRMURL(drm ofdrm.DRMInfo) string {
 	return strings.Join([]string{
 		drm.Manifest.Dash,
 		drm.Signature.Dash.CloudFrontPolicy,
 		drm.Signature.Dash.CloudFrontSignature,
 		drm.Signature.Dash.CloudFrontKeyPairID,
-		fmt.Sprint(mediaID),
-		fmt.Sprint(postID),
+		fmt.Sprint(drm.MediaID),
+		fmt.Sprint(drm.PostID),
 	}, ",")
 }
 
-func splitDRMURL(drmUrl string) ofdrm.DRMInfo {
+func parseDRMURL(drmUrl string) ofdrm.DRMInfo {
 	split := strings.Split(drmUrl, ",")
 	if len(split) != 6 {
 		return ofdrm.DRMInfo{}
@@ -98,6 +56,10 @@ func splitDRMURL(drmUrl string) ofdrm.DRMInfo {
 			},
 		},
 	}
+}
+
+func isDrmURL(url string) bool {
+	return parseDRMURL(url).Manifest.Dash != ""
 }
 
 func times(times ...time.Time) time.Time {
@@ -171,4 +133,9 @@ func collecPostsMedias(dl *OFDl, hintUser string, posts []model.Post) ([]Downloa
 		return i.Time.After(j.Time)
 	})
 	return results, nil
+}
+
+func toInt64(id any) (int64, error) {
+	str := fmt.Sprint(id)
+	return strconv.ParseInt(str, 10, 64)
 }

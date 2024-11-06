@@ -10,6 +10,7 @@ import (
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/yinyajiang/gof"
+	"github.com/yinyajiang/gof/common"
 	"github.com/yinyajiang/gof/ofapi"
 	"github.com/yinyajiang/gof/ofapi/model"
 	"github.com/yinyajiang/gof/ofdrm"
@@ -91,54 +92,153 @@ func (dl *OFDl) OFDRM() *ofdrm.OFDRM {
 	return dl.drmapi
 }
 
-func (dl *OFDl) ScrapeHome() ([]DownloadableMedia, error) {
+func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleURL bool, err error) {
+	if url == "" {
+		url = gof.OFPostDomain
+	}
+	if !isOFURL(url) {
+		return nil, false, fmt.Errorf("not a valid of url: %s", url)
+	}
+
+	isScrapeAll := isOFHomeURL(url) || ofurlMatch(reSubscriptions, url)
+	if isScrapeAll {
+		results, err = dl.scrapeAll()
+		return results, false, err
+	}
+
+	//chart
+	chartID, ok := ofurlFind(reSingleChat, url, "ID")
+	if ok {
+		chats := []identifier{
+			{
+				id:       chartID,
+				userName: "",
+			},
+		}
+		results, err = dl.scrapeChats(chats)
+		return results, false, err
+	}
+
+	//charts
+	if ok = ofurlMatch(reChats, url); ok {
+		subs, err := dl.api.GetSubscriptions(ofapi.SubscritionTypeActive)
+		if err != nil {
+			return nil, false, err
+		}
+		chats := []identifier{}
+		for _, sub := range subs {
+			chats = append(chats, identifier{
+				id:       sub.ID,
+				userName: sub.Username,
+			})
+		}
+		results, err = dl.scrapeChats(chats)
+		return results, false, err
+	}
+
+	//collections list
+	listID, ok := ofurlFind(reUserList, url, "ID")
+	if ok {
+		userList, err := dl.api.GetCollectionsListUsers(listID)
+		if err != nil {
+			return nil, false, err
+		}
+		users := []identifier{}
+		for _, user := range userList {
+			users = append(users, identifier{
+				id:       user.ID,
+				userName: user.Username,
+			})
+		}
+		results, err = dl.scrapeUsers(users)
+		return results, false, err
+	}
+
+	//post
+	postID, userName, ok := ofurlFind2(reSinglePost, url, "PostID", "UserName")
+	if ok {
+		post, err := dl.api.GetPost(postID)
+		if err != nil {
+			return nil, false, err
+		}
+		results, err = dl.collectPostMedia(userName, post)
+		return results, true, err
+	}
+
+	//user
+	userName, ok = ofurlFind(reUser, url, "UserName")
+	if ok {
+		usr, err := dl.api.GetUserByUsername(userName)
+		if err != nil {
+			return nil, false, err
+		}
+		results, err = dl.scrapeUsers([]identifier{
+			{
+				id:       usr.ID,
+				userName: userName,
+			},
+		})
+		return results, false, err
+	}
+
+	results, err = dl.scrapeAll()
+	return results, false, err
+}
+
+func (dl *OFDl) FetchFileInfo(downloadURL string) (info common.HttpFileInfo, err error) {
+	if !isDrmURL(downloadURL) {
+		return dl.api.Req().GetFileInfo(downloadURL)
+	}
+	return dl.drmapi.GetFileInfo(parseDRMURL(downloadURL))
+}
+
+func (dl *OFDl) scrapeAll() ([]DownloadableMedia, error) {
 	subs, err := dl.api.GetSubscriptions(ofapi.SubscritionTypeActive)
 	if err != nil {
 		return nil, err
 	}
-	funs := []collecFunc{}
+	users := []identifier{}
 	for _, sub := range subs {
+		users = append(users, identifier{
+			id:       sub.ID,
+			userName: sub.Username,
+		})
+	}
+	return dl.scrapeUsers(users)
+}
+
+func (dl *OFDl) scrapeUsers(users []identifier) ([]DownloadableMedia, error) {
+	funs := []collecFunc{}
+	for _, user := range users {
 		funs = append(funs, func() (string, []model.Post, error) {
-			posts, e := dl.api.GetUserPosts(sub.ID)
-			return sub.Username, posts, e
+			userID, e := toInt64(user.id)
+			if e != nil {
+				return "", nil, e
+			}
+			posts, e := dl.api.GetUserPosts(userID)
+			return user.userName, posts, e
 		})
 	}
 	return parallelCollecPostsMedias(dl, funs)
 }
 
-func (dl *OFDl) ScrapeUserMedia(url string) ([]DownloadableMedia, error) {
-	_, split, err := reUrlPathParse(url, `/[A-Za-z0-9\.]+`, 1)
-	if err != nil {
-		return nil, err
+func (dl *OFDl) scrapeChats(chats []identifier) ([]DownloadableMedia, error) {
+	funs := []collecFunc{}
+	for _, chat := range chats {
+		funs = append(funs, func() (string, []model.Post, error) {
+			chatID, e := toInt64(chat.id)
+			if e != nil {
+				return "", nil, e
+			}
+			posts, e := dl.api.GetChatMessages(chatID)
+			return "", posts, e
+		})
 	}
-	userName := split[0]
-	usr, err := dl.api.GetUserByUsername(userName)
-	if err != nil {
-		return nil, err
-	}
-	posts, err := dl.api.GetUserPosts(usr.ID)
-	if err != nil {
-		return nil, err
-	}
-	return collecPostsMedias(dl, userName, posts)
-}
-
-func (dl *OFDl) ScrapePostMedia(url string) ([]DownloadableMedia, error) {
-	_, split, err := reUrlPathParse(url, `/[0-9]+/[A-Za-z0-9\.]+`, 2)
-	if err != nil {
-		return nil, err
-	}
-	postID := split[0]
-	userName := split[1]
-	post, err := dl.api.GetPost(postID)
-	if err != nil {
-		return nil, err
-	}
-	return dl.collectPostMedia(userName, post)
+	return parallelCollecPostsMedias(dl, funs)
 }
 
 func (dl *OFDl) Download(dir string, media DownloadableMedia) error {
-	if !media.IsDrm() {
+	if !media.IsDrm {
 		return nil
 	}
 	args := []string{
@@ -149,7 +249,7 @@ func (dl *OFDl) Download(dir string, media DownloadableMedia) error {
 		"--format",
 		"bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best[ext=m4a]",
 	}
-	drminfo := media.DrmInfo()
+	drminfo := parseDRMURL(media.DownloadURL)
 	for k, v := range dl.drmapi.HTTPHeaders(drminfo) {
 		if k == "Accept" {
 			continue
@@ -168,34 +268,40 @@ func (dl *OFDl) collectPostMedia(hintUser string, post model.Post) ([]Downloadab
 	}
 
 	mediaSet := make(map[int64]DownloadableMedia)
-	for i, item := range post.Media {
-		if !item.CanView || item.Files == nil {
+	for i, media := range post.Media {
+		if !media.CanView || media.Files == nil {
 			continue
+		}
+		if hintUser == "" {
+			hintUser = post.FromUser.Username
 		}
 		dm := DownloadableMedia{
 			PostID:  post.ID,
-			MediaID: item.ID,
-			Type:    item.Type,
-			Time:    times(item.CreatedAt, post.CreatedAt, post.PostedAt),
+			MediaID: media.ID,
+			Type:    media.Type,
+			Time:    times(media.CreatedAt, post.CreatedAt, post.PostedAt),
 			Title:   strings.TrimLeft(fmt.Sprintf("%s.%d.%d", hintUser, post.ID, i), "."),
-			_drmapi: dl.drmapi,
 		}
 
-		if item.Files.Drm == nil {
-			if item.Files.Full != nil {
-				dm.DownloadURL = item.Files.Full.URL
-			} else if item.Files.Preview != nil {
-				dm.DownloadURL = item.Files.Preview.URL
+		if media.Files.Drm == nil {
+			if media.Files.Full != nil {
+				dm.DownloadURL = media.Files.Full.URL
+			} else if media.Files.Preview != nil {
+				dm.DownloadURL = media.Files.Preview.URL
 			}
-			dm._isDrm = false
+			dm.IsDrm = false
 			if strings.Contains(dm.DownloadURL, "upload") {
 				continue
 			}
 		} else {
-			dm.DownloadURL = composeDRMURL(item.ID, post.ID, *item.Files.Drm)
-			dm._isDrm = true
+			dm.DownloadURL = composeDRMURL(ofdrm.DRMInfo{
+				DRM:     *media.Files.Drm,
+				MediaID: media.ID,
+				PostID:  post.ID,
+			})
+			dm.IsDrm = true
 		}
-		mediaSet[item.ID] = dm
+		mediaSet[media.ID] = dm
 	}
 	if len(mediaSet) == 0 {
 		return nil, fmt.Errorf("no can view media found")
