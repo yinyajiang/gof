@@ -9,12 +9,17 @@ import (
 )
 
 var (
-	reSubscriptions = _mustCompile(`/my/collections/user-lists/(?:subscribers|subscriptions)(?:/active)?`)
-	reSingleChat    = _mustCompile(`/my/chats/chat/(?P<ID>[0-9]+)$`)
-	reChats         = _mustCompile(`/my/chats$`)
-	reUserList      = _mustCompile(`/my/collections/user-lists/(?P<ID>[0-9]+)$`)
-	reSinglePost    = _mustCompile(`/(?P<PostID>[0-9]+)/(?P<UserName>[A-Za-z0-9\.\-_]+)$`)
-	reUser          = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)$`)
+	reSubscriptions  = _mustCompile(`/my/collections/user-lists/(?:subscribers|subscriptions)(?:/active)?`)
+	reSingleChat     = _mustCompile(`/my/chats/chat/(?P<ID>[0-9]+)$`)
+	reChats          = _mustCompile(`/my/chats$`)
+	reUserList       = _mustCompile(`/my/collections/user-lists/(?P<ID>[0-9]+)$`)
+	reSinglePost     = _mustCompile(`/(?P<PostID>[0-9]+)/(?P<UserName>[A-Za-z0-9\.\-_]+)$`)
+	reUser           = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)$`)
+	reUserMedia      = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/media$`)
+	reUserVideos     = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/videos$`)
+	reUserPhotos     = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/photos$`)
+	reAllBookmarks   = _mustCompile(`/my/collections/bookmarks(?:/all)?$`)
+	reSingleBookmark = _mustCompile(`/my/collections/bookmarks/(?P<ID>[0-9]+)$`)
 )
 
 func _mustCompile(rePath string) *regexp.Regexp {
@@ -35,26 +40,49 @@ func isOFURL(url string) bool {
 	return strings.HasPrefix(url, gof.OFPostDomain)
 }
 
-func ofurlMatch(re *regexp.Regexp, url string) bool {
+func ofurlMatchs(url string, res ...*regexp.Regexp) bool {
+	if len(res) == 0 {
+		return false
+	}
 	url = common.CorrectOFURL(url, true)
-	return re.MatchString(url)
+	for _, re := range res {
+		if re.MatchString(url) {
+			return true
+		}
+	}
+	return false
 }
 
-func ofurlFind(re *regexp.Regexp, url, key string) (string, bool) {
+func ofurlFinds(url, key string, res ...*regexp.Regexp) (string, bool) {
+	if len(res) == 0 {
+		return "", false
+	}
 	url = common.CorrectOFURL(url, true)
-	if m, ok := common.ReGroup(re, url); ok {
-		v, ok := m[key]
-		return v, ok
+
+	for _, re := range res {
+		if m, ok := common.ReGroup(re, url); ok {
+			v, ok := m[key]
+			if ok {
+				return v, ok
+			}
+		}
 	}
 	return "", false
 }
 
-func ofurlFind2(re *regexp.Regexp, url, key1, key2 string) (string, string, bool) {
+func ofurlFinds2(url, key1, key2 string, res ...*regexp.Regexp) (string, string, bool) {
+	if len(res) == 0 {
+		return "", "", false
+	}
 	url = common.CorrectOFURL(url, true)
-	if m, ok := common.ReGroup(re, url); ok {
-		v1, ok1 := m[key1]
-		v2, ok2 := m[key2]
-		return v1, v2, ok1 && ok2
+	for _, re := range res {
+		if m, ok := common.ReGroup(re, url); ok {
+			v1, ok1 := m[key1]
+			v2, ok2 := m[key2]
+			if ok1 && ok2 {
+				return v1, v2, true
+			}
+		}
 	}
 	return "", "", false
 }

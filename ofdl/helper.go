@@ -90,13 +90,13 @@ func parallelCollecPostsMedias(dl *OFDl, funs []collecFunc) ([]DownloadableMedia
 				<-ch
 				wg.Done()
 			}()
-			userName, posts, err := fun()
+			hintName, posts, err := fun()
 			lock.Lock()
 			defer lock.Unlock()
 
 			var medias []DownloadableMedia
 			if err == nil {
-				medias, err = collecPostsMedias(dl, userName, posts)
+				medias, err = collecPostsMedias(dl, hintName, posts)
 			}
 			if err != nil {
 				if firstErr == nil {
@@ -114,13 +114,13 @@ func parallelCollecPostsMedias(dl *OFDl, funs []collecFunc) ([]DownloadableMedia
 	return results, firstErr
 }
 
-func collecPostsMedias(dl *OFDl, hintUser string, posts []model.Post) ([]DownloadableMedia, error) {
+func collecPostsMedias(dl *OFDl, hintName string, posts []model.Post) ([]DownloadableMedia, error) {
 	if len(posts) == 0 {
 		return nil, fmt.Errorf("posts is empty")
 	}
 	results := []DownloadableMedia{}
 	for _, post := range posts {
-		medias, e := dl.collectPostMedia(hintUser, post)
+		medias, e := dl.collectPostMedia(hintName, post)
 		if e == nil {
 			results = append(results, medias...)
 		}

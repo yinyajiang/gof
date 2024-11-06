@@ -14,7 +14,7 @@ type DownloadableMedia struct {
 	IsDrm       bool
 }
 
-type identifier struct {
+type scrapeIdentifier struct {
 	id       any
-	userName string
+	hintName string
 }

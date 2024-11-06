@@ -14,6 +14,14 @@ const (
 	SubscritionTypeAll     SubscritionType = "all"
 )
 
+type UserMedias int
+
+const (
+	UserMediasVideo UserMedias = 0
+	UserMediasPhoto UserMedias = 1
+	UserMediasAll   UserMedias = 2
+)
+
 type SubscribeFilter func(sub model.Subscription) bool
 
 func SubscribeRestrictedFilter(includeRestricted bool) SubscribeFilter {

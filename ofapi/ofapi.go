@@ -2,6 +2,7 @@ package ofapi
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -188,12 +189,50 @@ func (c *OFAPI) GetPost(postID any) (model.Post, error) {
 	return post, err
 }
 
+func (c *OFAPI) GetAllBookmarkes() ([]model.Post, error) {
+	return c.getBookmarkesByEndPoint("/all")
+}
+
+func (c *OFAPI) GetBookmark(bookmarkID any) ([]model.Post, error) {
+	return c.getBookmarkesByEndPoint(fmt.Sprintf("/all/%v", bookmarkID))
+}
+
+func (c *OFAPI) getBookmarkesByEndPoint(endpoint string) ([]model.Post, error) {
+	if endpoint != "" && !strings.HasPrefix(endpoint, "/") {
+		endpoint = "/" + endpoint
+	}
+
+	var err error
+	hasMore := true
+	offset := 0
+	var result []model.Post
+	for hasMore {
+		var moreList moreList[model.Post]
+		err = c.req.GetUnmarshal("/posts/bookmarks"+endpoint, map[string]string{
+			"offset":     strconv.Itoa(offset),
+			"limit":      "50",
+			"format":     "infinite",
+			"skip_users": "all",
+		}, &moreList)
+		if err != nil {
+			break
+		}
+		hasMore = moreList.HasMore
+		offset += len(moreList.List)
+		result = append(result, moreList.List...)
+	}
+	if len(result) != 0 {
+		return result, nil
+	}
+	return nil, err
+}
+
 func (c *OFAPI) GetUserPosts(userID int64) ([]model.Post, error) {
 	return c.GetUserPostsByTime(userID, time.Now(), TimeDirectionBefore)
 }
 
-func (c *OFAPI) GetUserMedias(userID int64) ([]model.Post, error) {
-	return c.GetUserMediasByTime(userID, time.Now(), TimeDirectionBefore)
+func (c *OFAPI) GetUserMedias(userID int64, userMedias UserMedias) ([]model.Post, error) {
+	return c.GetUserMediasByTime(userID, time.Now(), TimeDirectionBefore, userMedias)
 }
 
 func (c *OFAPI) GetUserStreams(userID int64) ([]model.Post, error) {
@@ -216,8 +255,15 @@ func (c *OFAPI) GetUserStreamsByTime(userID int64, timePoint time.Time, timeDire
 	return c.getUserPostsByEndPointAndTime(userID, "/posts/streams", nil, timePoint, timeDirection)
 }
 
-func (c *OFAPI) GetUserMediasByTime(userID int64, timePoint time.Time, timeDirection TimeDirection) ([]model.Post, error) {
-	return c.getUserPostsByEndPointAndTime(userID, "/posts/medias", map[string]string{
+func (c *OFAPI) GetUserMediasByTime(userID int64, timePoint time.Time, timeDirection TimeDirection, userMedias UserMedias) ([]model.Post, error) {
+	endpoint := "/posts/medias"
+	switch userMedias {
+	case UserMediasVideo:
+		endpoint = "/posts/videos"
+	case UserMediasPhoto:
+		endpoint = "/posts/photos"
+	}
+	return c.getUserPostsByEndPointAndTime(userID, endpoint, map[string]string{
 		"skip_users": "all",
 	}, timePoint, timeDirection)
 }

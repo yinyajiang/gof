@@ -100,19 +100,19 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 		return nil, false, fmt.Errorf("not a valid of url: %s", url)
 	}
 
-	isScrapeAll := isOFHomeURL(url) || ofurlMatch(reSubscriptions, url)
+	isScrapeAll := isOFHomeURL(url) || ofurlMatchs(url, reSubscriptions)
 	if isScrapeAll {
 		results, err = dl.scrapeAll()
 		return results, false, err
 	}
 
 	//chart
-	chartID, ok := ofurlFind(reSingleChat, url, "ID")
+	chartID, ok := ofurlFinds(url, "ID", reSingleChat)
 	if ok {
-		chats := []identifier{
+		chats := []scrapeIdentifier{
 			{
 				id:       chartID,
-				userName: "",
+				hintName: "",
 			},
 		}
 		results, err = dl.scrapeChats(chats)
@@ -120,16 +120,16 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 	}
 
 	//charts
-	if ok = ofurlMatch(reChats, url); ok {
+	if ok = ofurlMatchs(url, reChats); ok {
 		subs, err := dl.api.GetSubscriptions(ofapi.SubscritionTypeActive)
 		if err != nil {
 			return nil, false, err
 		}
-		chats := []identifier{}
+		chats := []scrapeIdentifier{}
 		for _, sub := range subs {
-			chats = append(chats, identifier{
+			chats = append(chats, scrapeIdentifier{
 				id:       sub.ID,
-				userName: sub.Username,
+				hintName: sub.Username,
 			})
 		}
 		results, err = dl.scrapeChats(chats)
@@ -137,25 +137,25 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 	}
 
 	//collections list
-	listID, ok := ofurlFind(reUserList, url, "ID")
+	listID, ok := ofurlFinds(url, "ID", reUserList)
 	if ok {
 		userList, err := dl.api.GetCollectionsListUsers(listID)
 		if err != nil {
 			return nil, false, err
 		}
-		users := []identifier{}
+		users := []scrapeIdentifier{}
 		for _, user := range userList {
-			users = append(users, identifier{
+			users = append(users, scrapeIdentifier{
 				id:       user.ID,
-				userName: user.Username,
+				hintName: user.Username,
 			})
 		}
-		results, err = dl.scrapeUsers(users)
+		results, err = dl.scrapeUsers(users, ofapi.UserMediasAll)
 		return results, false, err
 	}
 
 	//post
-	postID, userName, ok := ofurlFind2(reSinglePost, url, "PostID", "UserName")
+	postID, userName, ok := ofurlFinds2(url, "PostID", "UserName", reSinglePost)
 	if ok {
 		post, err := dl.api.GetPost(postID)
 		if err != nil {
@@ -165,19 +165,45 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 		return results, true, err
 	}
 
-	//user
-	userName, ok = ofurlFind(reUser, url, "UserName")
+	//user, user media
+	userName, ok = ofurlFinds(url, "UserName", reUser, reUserMedia)
 	if ok {
-		usr, err := dl.api.GetUserByUsername(userName)
+		results, err = dl.scrapeUserByName(userName, ofapi.UserMediasAll)
+		return results, false, err
+	}
+
+	//user photos
+	userName, ok = ofurlFinds(url, "UserName", reUserPhotos)
+	if ok {
+		results, err = dl.scrapeUserByName(userName, ofapi.UserMediasPhoto)
+		return results, false, err
+	}
+
+	//user videos
+	userName, ok = ofurlFinds(url, "UserName", reUserVideos)
+	if ok {
+		results, err = dl.scrapeUserByName(userName, ofapi.UserMediasVideo)
+		return results, false, err
+	}
+
+	//all bookmarks
+	if ok = ofurlMatchs(url, reAllBookmarks); ok {
+		bookmarks, err := dl.api.GetAllBookmarkes()
 		if err != nil {
 			return nil, false, err
 		}
-		results, err = dl.scrapeUsers([]identifier{
-			{
-				id:       usr.ID,
-				userName: userName,
-			},
-		})
+		results, err = collecPostsMedias(dl, "bookmarks", bookmarks)
+		return results, false, err
+	}
+
+	//single bookmark
+	bookmarkID, ok := ofurlFinds(url, "ID", reSingleBookmark)
+	if ok {
+		bookmarks, err := dl.api.GetBookmark(bookmarkID)
+		if err != nil {
+			return nil, false, err
+		}
+		results, err = collecPostsMedias(dl, "bookmark", bookmarks)
 		return results, false, err
 	}
 
@@ -197,17 +223,30 @@ func (dl *OFDl) scrapeAll() ([]DownloadableMedia, error) {
 	if err != nil {
 		return nil, err
 	}
-	users := []identifier{}
+	users := []scrapeIdentifier{}
 	for _, sub := range subs {
-		users = append(users, identifier{
+		users = append(users, scrapeIdentifier{
 			id:       sub.ID,
-			userName: sub.Username,
+			hintName: sub.Username,
 		})
 	}
-	return dl.scrapeUsers(users)
+	return dl.scrapeUsers(users, ofapi.UserMediasAll)
 }
 
-func (dl *OFDl) scrapeUsers(users []identifier) ([]DownloadableMedia, error) {
+func (dl *OFDl) scrapeUserByName(userName string, userMedias ofapi.UserMedias) ([]DownloadableMedia, error) {
+	usr, err := dl.api.GetUserByUsername(userName)
+	if err != nil {
+		return nil, err
+	}
+	return dl.scrapeUsers([]scrapeIdentifier{
+		{
+			id:       usr.ID,
+			hintName: userName,
+		},
+	}, userMedias)
+}
+
+func (dl *OFDl) scrapeUsers(users []scrapeIdentifier, userMedias ofapi.UserMedias) ([]DownloadableMedia, error) {
 	funs := []collecFunc{}
 	for _, user := range users {
 		funs = append(funs, func() (string, []model.Post, error) {
@@ -215,14 +254,14 @@ func (dl *OFDl) scrapeUsers(users []identifier) ([]DownloadableMedia, error) {
 			if e != nil {
 				return "", nil, e
 			}
-			posts, e := dl.api.GetUserPosts(userID)
-			return user.userName, posts, e
+			posts, e := dl.api.GetUserMedias(userID, userMedias)
+			return user.hintName, posts, e
 		})
 	}
 	return parallelCollecPostsMedias(dl, funs)
 }
 
-func (dl *OFDl) scrapeChats(chats []identifier) ([]DownloadableMedia, error) {
+func (dl *OFDl) scrapeChats(chats []scrapeIdentifier) ([]DownloadableMedia, error) {
 	funs := []collecFunc{}
 	for _, chat := range chats {
 		funs = append(funs, func() (string, []model.Post, error) {
@@ -262,7 +301,7 @@ func (dl *OFDl) Download(dir string, media DownloadableMedia) error {
 	return nil
 }
 
-func (dl *OFDl) collectPostMedia(hintUser string, post model.Post) ([]DownloadableMedia, error) {
+func (dl *OFDl) collectPostMedia(hintName string, post model.Post) ([]DownloadableMedia, error) {
 	if len(post.Media) == 0 {
 		return nil, fmt.Errorf("no media found")
 	}
@@ -272,15 +311,15 @@ func (dl *OFDl) collectPostMedia(hintUser string, post model.Post) ([]Downloadab
 		if !media.CanView || media.Files == nil {
 			continue
 		}
-		if hintUser == "" {
-			hintUser = post.FromUser.Username
+		if hintName == "" {
+			hintName = post.FromUser.Username
 		}
 		dm := DownloadableMedia{
 			PostID:  post.ID,
 			MediaID: media.ID,
 			Type:    media.Type,
 			Time:    times(media.CreatedAt, post.CreatedAt, post.PostedAt),
-			Title:   strings.TrimLeft(fmt.Sprintf("%s.%d.%d", hintUser, post.ID, i), "."),
+			Title:   strings.TrimLeft(fmt.Sprintf("%s.%d.%d", hintName, post.ID, i), "."),
 		}
 
 		if media.Files.Drm == nil {
