@@ -17,9 +17,9 @@ const (
 type UserMedias int
 
 const (
-	UserMediasVideo UserMedias = 0
-	UserMediasPhoto UserMedias = 1
-	UserMediasAll   UserMedias = 2
+	UserMediasVideos UserMedias = 0
+	UserMediasPhotos UserMedias = 1
+	UserMediasAll    UserMedias = 2
 )
 
 type BookmarkMedia int

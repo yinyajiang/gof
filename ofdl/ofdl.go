@@ -166,23 +166,16 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 	}
 
 	//user, user media
-	userName, ok = ofurlFinds(url, "UserName", reUser, reUserMedia)
+	userName, ok = ofurlFinds(url, "UserName", reUser)
 	if ok {
-		results, err = dl.scrapeUserByName(userName, ofapi.UserMediasAll)
+		results, err = dl.scrapeUserByName(userName, "")
 		return results, false, err
 	}
 
-	//user photos
-	userName, ok = ofurlFinds(url, "UserName", reUserPhotos)
+	//user media byType
+	userName, mediaType, ok := ofurlFinds2(url, "UserName", "MediaType", reUserByMediaType)
 	if ok {
-		results, err = dl.scrapeUserByName(userName, ofapi.UserMediasPhoto)
-		return results, false, err
-	}
-
-	//user videos
-	userName, ok = ofurlFinds(url, "UserName", reUserVideos)
-	if ok {
-		results, err = dl.scrapeUserByName(userName, ofapi.UserMediasVideo)
+		results, err = dl.scrapeUserByName(userName, mediaType)
 		return results, false, err
 	}
 
@@ -193,7 +186,7 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 	}
 
 	//all bookmarks by media type
-	mediaType, ok := ofurlFinds(url, "MediaType", reAllBookmarksByMediaType)
+	mediaType, ok = ofurlFinds(url, "MediaType", reAllBookmarksByMediaType)
 	if ok {
 		results, err = dl.scrapeBookmarks("", mediaType)
 		return results, false, err
@@ -258,7 +251,7 @@ func (dl *OFDl) scrapeBookmarks(allEmptryOrID string, allEmptryOrMediaType strin
 	return dl.collecMutilMedias("bookmark."+allEmptryOrMediaType, bookmarks)
 }
 
-func (dl *OFDl) scrapeUserByName(userName string, userMedias ofapi.UserMedias) ([]DownloadableMedia, error) {
+func (dl *OFDl) scrapeUserByName(userName string, allEmptryOrMediaType string) ([]DownloadableMedia, error) {
 	usr, err := dl.api.GetUserByUsername(userName)
 	if err != nil {
 		return nil, err
@@ -268,7 +261,7 @@ func (dl *OFDl) scrapeUserByName(userName string, userMedias ofapi.UserMedias) (
 			id:       usr.ID,
 			hintName: userName,
 		},
-	}, userMedias)
+	}, userMediasType(allEmptryOrMediaType))
 }
 
 func (dl *OFDl) scrapeUsers(users []scrapeIdentifier, userMedias ofapi.UserMedias) ([]DownloadableMedia, error) {

@@ -284,9 +284,9 @@ func (c *OFAPI) GetUserStreamsByTime(userID int64, timePoint time.Time, timeDire
 func (c *OFAPI) GetUserMediasByTime(userID int64, timePoint time.Time, timeDirection TimeDirection, userMedias UserMedias) ([]model.Post, error) {
 	endpoint := "/posts/medias"
 	switch userMedias {
-	case UserMediasVideo:
+	case UserMediasVideos:
 		endpoint = "/posts/videos"
-	case UserMediasPhoto:
+	case UserMediasPhotos:
 		endpoint = "/posts/photos"
 	}
 	return c.getUserPostsByEndPointAndTime(userID, endpoint, map[string]string{

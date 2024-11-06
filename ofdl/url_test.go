@@ -58,25 +58,19 @@ func TestOFURL(t *testing.T) {
 		{url: "https://onlyfans.com/kira.asia.ts?test=test", key: "UserName", value: "kira.asia.ts"},
 	}
 
-	userMediaURLs := []testFindKeyURLSt{
-		{url: "https://onlyfans.com/olivoil2/media", key: "UserName", value: "olivoil2"},
-		{url: "https://onlyfans.com/olivoil2/media/", key: "UserName", value: "olivoil2"},
-		{url: "https://onlyfans.com/olivoil2/media/?test=test", key: "UserName", value: "olivoil2"},
-		{url: "https://onlyfans.com/olivoil2/media?test=test", key: "UserName", value: "olivoil2"},
-	}
-
-	userVideosURLs := []testFindKeyURLSt{
-		{url: "https://onlyfans.com/olivoil2/videos", key: "UserName", value: "olivoil2"},
-		{url: "https://onlyfans.com/olivoil2/videos/", key: "UserName", value: "olivoil2"},
-		{url: "https://onlyfans.com/olivoil2/videos/?test=test", key: "UserName", value: "olivoil2"},
-		{url: "https://onlyfans.com/olivoil2/videos?test=test", key: "UserName", value: "olivoil2"},
-	}
-
-	userPhotosURLs := []testFindKeyURLSt{
-		{url: "https://onlyfans.com/olivoil2/photos", key: "UserName", value: "olivoil2"},
-		{url: "https://onlyfans.com/olivoil2/photos/", key: "UserName", value: "olivoil2"},
-		{url: "https://onlyfans.com/olivoil2/photos/?test=test", key: "UserName", value: "olivoil2"},
-		{url: "https://onlyfans.com/olivoil2/photos?test=test", key: "UserName", value: "olivoil2"},
+	userMediaTypeURLs := []testFindKeyURLSt2{
+		{url: "https://onlyfans.com/olivoil2/media", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "media"},
+		{url: "https://onlyfans.com/olivoil2/media/", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "media"},
+		{url: "https://onlyfans.com/olivoil2/media/?test=test", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "media"},
+		{url: "https://onlyfans.com/olivoil2/media?test=test", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "media"},
+		{url: "https://onlyfans.com/olivoil2/videos", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "videos"},
+		{url: "https://onlyfans.com/olivoil2/videos/", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "videos"},
+		{url: "https://onlyfans.com/olivoil2/videos/?test=test", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "videos"},
+		{url: "https://onlyfans.com/olivoil2/videos?test=test", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "videos"},
+		{url: "https://onlyfans.com/olivoil2/photos", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "photos"},
+		{url: "https://onlyfans.com/olivoil2/photos/", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "photos"},
+		{url: "https://onlyfans.com/olivoil2/photos/?test=test", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "photos"},
+		{url: "https://onlyfans.com/olivoil2/photos?test=test", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "photos"},
 	}
 
 	allBookmarkURLs := []string{
@@ -155,9 +149,7 @@ func TestOFURL(t *testing.T) {
 	testFindKeyURLs(t, reUserList, userListURLs)
 	testFindKey2URLs(t, reSinglePost, postURLs)
 	testFindKeyURLs(t, reUser, userURLs)
-	testFindKeyURLs(t, reUserMedia, userMediaURLs)
-	testFindKeyURLs(t, reUserVideos, userVideosURLs)
-	testFindKeyURLs(t, reUserPhotos, userPhotosURLs)
+	testFindKey2URLs(t, reUserByMediaType, userMediaTypeURLs)
 	testMatchURLs(t, reAllBookmarks, allBookmarkURLs)
 	testFindKeyURLs(t, reAllBookmarksByMediaType, allBookmarkByMediaTypeURLs)
 	testFindKeyURLs(t, reSingleBookmark, singleBookmarkURLs)
@@ -169,7 +161,7 @@ func TestOFURL(t *testing.T) {
 	testNotMatchURLs(t, reUserList, homeURLs)
 	testNotMatchURLs(t, reSinglePost, homeURLs)
 	testNotMatchURLs(t, reUser, homeURLs)
-	testNotMatchURLs(t, reUserMedia, homeURLs)
+	testNotMatchURLs(t, reUserByMediaType, homeURLs)
 	testNotMatchURLs(t, reAllBookmarks, homeURLs)
 	testNotMatchURLs(t, reSingleBookmark, homeURLs)
 	testNotMatchURLs(t, reAllBookmarksByMediaType, homeURLs)
@@ -180,9 +172,7 @@ func TestOFURL(t *testing.T) {
 	testNotMatchURLs(t, reUserList, subscriptionsURLs)
 	testNotMatchURLs(t, reSinglePost, subscriptionsURLs)
 	testNotMatchURLs(t, reUser, subscriptionsURLs)
-	testNotMatchURLs(t, reUserMedia, subscriptionsURLs)
-	testNotMatchURLs(t, reUserVideos, subscriptionsURLs)
-	testNotMatchURLs(t, reUserPhotos, subscriptionsURLs)
+	testNotMatchURLs(t, reUserByMediaType, subscriptionsURLs)
 	testNotMatchURLs(t, reAllBookmarks, subscriptionsURLs)
 	testNotMatchURLs(t, reSingleBookmark, subscriptionsURLs)
 	testNotMatchURLs(t, reAllBookmarksByMediaType, subscriptionsURLs)
@@ -193,9 +183,7 @@ func TestOFURL(t *testing.T) {
 	testNotMatchURLs(t, reUserList, chartsURLs)
 	testNotMatchURLs(t, reSinglePost, chartsURLs)
 	testNotMatchURLs(t, reUser, chartsURLs)
-	testNotMatchURLs(t, reUserMedia, chartsURLs)
-	testNotMatchURLs(t, reUserVideos, chartsURLs)
-	testNotMatchURLs(t, reUserPhotos, chartsURLs)
+	testNotMatchURLs(t, reUserByMediaType, chartsURLs)
 	testNotMatchURLs(t, reAllBookmarks, chartsURLs)
 	testNotMatchURLs(t, reSingleBookmark, chartsURLs)
 	testNotMatchURLs(t, reAllBookmarksByMediaType, chartsURLs)
@@ -206,9 +194,7 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKeyURLs(t, reUserList, chatURLs)
 	testNotMatchKeyURLs(t, reSinglePost, chatURLs)
 	testNotMatchKeyURLs(t, reUser, chatURLs)
-	testNotMatchKeyURLs(t, reUserMedia, chatURLs)
-	testNotMatchKeyURLs(t, reUserVideos, chatURLs)
-	testNotMatchKeyURLs(t, reUserPhotos, chatURLs)
+	testNotMatchKeyURLs(t, reUserByMediaType, chatURLs)
 	testNotMatchKeyURLs(t, reAllBookmarks, chatURLs)
 	testNotMatchKeyURLs(t, reSingleBookmark, chatURLs)
 	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, chatURLs)
@@ -219,9 +205,7 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKeyURLs(t, reSingleChat, userListURLs)
 	testNotMatchKeyURLs(t, reSinglePost, userListURLs)
 	testNotMatchKeyURLs(t, reUser, userListURLs)
-	testNotMatchKeyURLs(t, reUserMedia, userListURLs)
-	testNotMatchKeyURLs(t, reUserPhotos, userListURLs)
-	testNotMatchKeyURLs(t, reUserVideos, userListURLs)
+	testNotMatchKeyURLs(t, reUserByMediaType, userListURLs)
 	testNotMatchKeyURLs(t, reAllBookmarks, userListURLs)
 	testNotMatchKeyURLs(t, reSingleBookmark, userListURLs)
 	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, userListURLs)
@@ -232,9 +216,7 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKey2URLs(t, reSingleChat, postURLs)
 	testNotMatchKey2URLs(t, reUserList, postURLs)
 	testNotMatchKey2URLs(t, reUser, postURLs)
-	testNotMatchKey2URLs(t, reUserMedia, postURLs)
-	testNotMatchKey2URLs(t, reUserPhotos, postURLs)
-	testNotMatchKey2URLs(t, reUserVideos, postURLs)
+	testNotMatchKey2URLs(t, reUserByMediaType, postURLs)
 	testNotMatchKey2URLs(t, reAllBookmarks, postURLs)
 	testNotMatchKey2URLs(t, reSingleBookmark, postURLs)
 	testNotMatchKey2URLs(t, reAllBookmarksByMediaType, postURLs)
@@ -245,52 +227,22 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKeyURLs(t, reSingleChat, userURLs)
 	testNotMatchKeyURLs(t, reUserList, userURLs)
 	testNotMatchKeyURLs(t, reSinglePost, userURLs)
-	testNotMatchKeyURLs(t, reUserMedia, userURLs)
-	testNotMatchKeyURLs(t, reUserPhotos, userURLs)
-	testNotMatchKeyURLs(t, reUserVideos, userURLs)
+	testNotMatchKeyURLs(t, reUserByMediaType, userURLs)
 	testNotMatchKeyURLs(t, reAllBookmarks, userURLs)
 	testNotMatchKeyURLs(t, reSingleBookmark, userURLs)
 	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, userURLs)
 	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, userURLs)
 
-	testNotMatchKeyURLs(t, reSubscriptions, userMediaURLs)
-	testNotMatchKeyURLs(t, reChats, userMediaURLs)
-	testNotMatchKeyURLs(t, reSingleChat, userMediaURLs)
-	testNotMatchKeyURLs(t, reUserList, userMediaURLs)
-	testNotMatchKeyURLs(t, reSinglePost, userMediaURLs)
-	testNotMatchKeyURLs(t, reUser, userMediaURLs)
-	testNotMatchKeyURLs(t, reUserPhotos, userMediaURLs)
-	testNotMatchKeyURLs(t, reUserVideos, userMediaURLs)
-	testNotMatchKeyURLs(t, reAllBookmarks, userMediaURLs)
-	testNotMatchKeyURLs(t, reSingleBookmark, userMediaURLs)
-	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, userMediaURLs)
-	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, userMediaURLs)
-
-	testNotMatchKeyURLs(t, reSubscriptions, userVideosURLs)
-	testNotMatchKeyURLs(t, reChats, userVideosURLs)
-	testNotMatchKeyURLs(t, reSingleChat, userVideosURLs)
-	testNotMatchKeyURLs(t, reUserList, userVideosURLs)
-	testNotMatchKeyURLs(t, reSinglePost, userVideosURLs)
-	testNotMatchKeyURLs(t, reUser, userVideosURLs)
-	testNotMatchKeyURLs(t, reUserMedia, userVideosURLs)
-	testNotMatchKeyURLs(t, reUserPhotos, userVideosURLs)
-	testNotMatchKeyURLs(t, reAllBookmarks, userVideosURLs)
-	testNotMatchKeyURLs(t, reSingleBookmark, userVideosURLs)
-	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, userVideosURLs)
-	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, userVideosURLs)
-
-	testNotMatchKeyURLs(t, reSubscriptions, userPhotosURLs)
-	testNotMatchKeyURLs(t, reChats, userPhotosURLs)
-	testNotMatchKeyURLs(t, reSingleChat, userPhotosURLs)
-	testNotMatchKeyURLs(t, reUserList, userPhotosURLs)
-	testNotMatchKeyURLs(t, reSinglePost, userPhotosURLs)
-	testNotMatchKeyURLs(t, reUser, userPhotosURLs)
-	testNotMatchKeyURLs(t, reUserMedia, userPhotosURLs)
-	testNotMatchKeyURLs(t, reUserVideos, userPhotosURLs)
-	testNotMatchKeyURLs(t, reAllBookmarks, userPhotosURLs)
-	testNotMatchKeyURLs(t, reSingleBookmark, userPhotosURLs)
-	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, userPhotosURLs)
-	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, userPhotosURLs)
+	testNotMatchKey2URLs(t, reSubscriptions, userMediaTypeURLs)
+	testNotMatchKey2URLs(t, reChats, userMediaTypeURLs)
+	testNotMatchKey2URLs(t, reSingleChat, userMediaTypeURLs)
+	testNotMatchKey2URLs(t, reUserList, userMediaTypeURLs)
+	testNotMatchKey2URLs(t, reSinglePost, userMediaTypeURLs)
+	testNotMatchKey2URLs(t, reUser, userMediaTypeURLs)
+	testNotMatchKey2URLs(t, reAllBookmarks, userMediaTypeURLs)
+	testNotMatchKey2URLs(t, reSingleBookmark, userMediaTypeURLs)
+	testNotMatchKey2URLs(t, reAllBookmarksByMediaType, userMediaTypeURLs)
+	testNotMatchKey2URLs(t, reSingleBookmarkByMediaType, userMediaTypeURLs)
 
 	testNotMatchURLs(t, reSubscriptions, allBookmarkURLs)
 	testNotMatchURLs(t, reChats, allBookmarkURLs)
@@ -298,9 +250,7 @@ func TestOFURL(t *testing.T) {
 	testNotMatchURLs(t, reUserList, allBookmarkURLs)
 	testNotMatchURLs(t, reSinglePost, allBookmarkURLs)
 	testNotMatchURLs(t, reUser, allBookmarkURLs)
-	testNotMatchURLs(t, reUserMedia, allBookmarkURLs)
-	testNotMatchURLs(t, reUserVideos, allBookmarkURLs)
-	testNotMatchURLs(t, reUserPhotos, allBookmarkURLs)
+	testNotMatchURLs(t, reUserByMediaType, allBookmarkURLs)
 	testNotMatchURLs(t, reSingleBookmark, allBookmarkURLs)
 	testNotMatchURLs(t, reAllBookmarksByMediaType, allBookmarkURLs)
 	testNotMatchURLs(t, reSingleBookmarkByMediaType, allBookmarkURLs)
@@ -311,9 +261,7 @@ func TestOFURL(t *testing.T) {
 	testNotMatchKeyURLs(t, reUserList, singleBookmarkURLs)
 	testNotMatchKeyURLs(t, reSinglePost, singleBookmarkURLs)
 	testNotMatchKeyURLs(t, reUser, singleBookmarkURLs)
-	testNotMatchKeyURLs(t, reUserMedia, singleBookmarkURLs)
-	testNotMatchKeyURLs(t, reUserVideos, singleBookmarkURLs)
-	testNotMatchKeyURLs(t, reUserPhotos, singleBookmarkURLs)
+	testNotMatchKeyURLs(t, reUserByMediaType, singleBookmarkURLs)
 	testNotMatchKeyURLs(t, reAllBookmarks, singleBookmarkURLs)
 	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, singleBookmarkURLs)
 	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, singleBookmarkURLs)

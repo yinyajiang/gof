@@ -16,9 +16,7 @@ var (
 	reUserList                  = _mustCompile(`/my/collections/user-lists/(?P<ID>[0-9]+)$`)
 	reSinglePost                = _mustCompile(`/(?P<PostID>[0-9]+)/(?P<UserName>[A-Za-z0-9\.\-_]+)$`)
 	reUser                      = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)$`)
-	reUserMedia                 = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/media$`)
-	reUserVideos                = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/videos$`)
-	reUserPhotos                = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/photos$`)
+	reUserByMediaType           = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)/(?P<MediaType>media|videos|photos)$`)
 	reAllBookmarks              = _mustCompile(`/my/collections/bookmarks(?:/all)?$`)
 	reAllBookmarksByMediaType   = _mustCompile(`/my/collections/bookmarks/all/(?P<MediaType>photos|videos|audios|other|locked)$`)
 	reSingleBookmark            = _mustCompile(`/my/collections/bookmarks/(?P<ID>[0-9]+)$`)
@@ -39,6 +37,18 @@ func bookmarkMediaType(s string) ofapi.BookmarkMedia {
 		return ofapi.BookmarkLocked
 	}
 	return ofapi.BookmarkAll
+}
+
+func userMediasType(s string) ofapi.UserMedias {
+	switch s {
+	case "media":
+		return ofapi.UserMediasAll
+	case "videos":
+		return ofapi.UserMediasVideos
+	case "photos":
+		return ofapi.UserMediasPhotos
+	}
+	return ofapi.UserMediasAll
 }
 
 func _mustCompile(rePath string) *regexp.Regexp {
