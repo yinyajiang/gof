@@ -48,9 +48,9 @@ func ofurlMatchs(url string, res ...*regexp.Regexp) bool {
 	return false
 }
 
-func ofurlFinds(must, optional []string, url string, res ...*regexp.Regexp) ([]string, bool) {
+func ofurlFinds(must, optional []string, url string, res ...*regexp.Regexp) (map[string]string, bool) {
 	if len(res) == 0 {
-		return nil, false
+		return map[string]string{}, false
 	}
 
 	url = common.CorrectOFURL(url, true)
@@ -60,7 +60,7 @@ reloop:
 		if !re.MatchString(url) {
 			continue
 		}
-		result := make([]string, len(must)+len(optional))
+		result := map[string]string{}
 
 		if len(must) == 0 && len(optional) == 0 {
 			return result, true
@@ -68,18 +68,18 @@ reloop:
 
 		m, ok := common.ReGroup(re, url)
 		if ok {
-			for i, mustKey := range must {
+			for _, mustKey := range must {
 				v, ok := m[mustKey]
 				if ok {
-					result[i] = v
+					result[mustKey] = v
 				} else {
 					continue reloop
 				}
 			}
-			for i, optionalKey := range optional {
+			for _, optionalKey := range optional {
 				v, ok := m[optionalKey]
 				if ok {
-					result[len(must)+i] = v
+					result[optionalKey] = v
 				}
 			}
 			return result, true
@@ -87,5 +87,5 @@ reloop:
 			return result, true
 		}
 	}
-	return nil, false
+	return map[string]string{}, false
 }

@@ -109,39 +109,39 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 	//chart
 	founds, ok := ofurlFinds(nil, []string{"ID"}, url, reChat)
 	if ok {
-		results, err = dl.scrapeChat(founds[0])
+		results, err = dl.scrapeChat(founds["ID"])
 		return results, false, err
 	}
 
 	//collections list
 	founds, ok = ofurlFinds(nil, []string{"ID"}, url, reUserList)
 	if ok {
-		results, err = dl.scrapeUserList(founds[0])
+		results, err = dl.scrapeUserList(founds["ID"])
 		return results, false, err
 	}
 
 	//post
 	founds, ok = ofurlFinds([]string{"ID", "UserName"}, nil, url, reSinglePost)
 	if ok {
-		post, err := dl.api.GetPost(founds[0])
+		post, err := dl.api.GetPost(founds["ID"])
 		if err != nil {
 			return nil, false, err
 		}
-		results, err = dl.collectMedias(founds[1], post)
+		results, err = dl.collectMedias(founds["UserName"], post)
 		return results, true, err
 	}
 
 	//user
 	founds, ok = ofurlFinds([]string{"UserName"}, []string{"MediaType"}, url, reUserWithMediaType)
 	if ok {
-		results, err = dl.scrapeUser(founds[0], founds[1])
+		results, err = dl.scrapeUser(founds["UserName"], founds["MediaType"])
 		return results, false, err
 	}
 
 	//bookmarks
 	founds, ok = ofurlFinds(nil, []string{"ID", "MediaType"}, url, reBookmarksWithMediaType)
 	if ok {
-		results, err = dl.scrapeBookmarks(founds[0], founds[1])
+		results, err = dl.scrapeBookmarks(founds["ID"], founds["MediaType"])
 		return results, false, err
 	}
 

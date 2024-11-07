@@ -229,14 +229,14 @@ func testShouldMatchURLs(t *testing.T, re *regexp.Regexp, tests []testURLSt) {
 			t.Logf("url should match: %s, re: %s", ts.url, re.String())
 			t.Fail()
 		} else {
-			for i := range ts.must {
-				if founds[i] != ts.mustValue[i] {
+			for i, mustKey := range ts.must {
+				if founds[mustKey] != ts.mustValue[i] {
 					t.Logf("url should match: %s, re: %s", ts.url, re.String())
 					t.Fail()
 				}
 			}
-			for i := range ts.optional {
-				if founds[len(ts.must)+i] != ts.optionalValue[i] {
+			for i, optionalKey := range ts.optional {
+				if founds[optionalKey] != ts.optionalValue[i] {
 					t.Logf("url should match: %s, re: %s", ts.url, re.String())
 					t.Fail()
 				}
