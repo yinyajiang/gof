@@ -121,7 +121,7 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 	}
 
 	//post
-	founds, ok = ofurlFinds([]string{"PostID", "UserName"}, nil, url, reSinglePost)
+	founds, ok = ofurlFinds([]string{"ID", "UserName"}, nil, url, reSinglePost)
 	if ok {
 		post, err := dl.api.GetPost(founds[0])
 		if err != nil {

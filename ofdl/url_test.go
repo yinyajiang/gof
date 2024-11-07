@@ -70,9 +70,9 @@ func TestOFURL(t *testing.T) {
 	}
 
 	postURLs := []testURLSt{
-		{url: "https://onlyfans.com/1353172156/onlyfans", must: []string{"PostID", "UserName"}, mustValue: []string{"1353172156", "onlyfans"}},
-		{url: "https://onlyfans.com/1353172156/onlyfans/?test=test", must: []string{"PostID", "UserName"}, mustValue: []string{"1353172156", "onlyfans"}},
-		{url: "https://onlyfans.com/1353172156/onlyfans?test=test", must: []string{"PostID", "UserName"}, mustValue: []string{"1353172156", "onlyfans"}},
+		{url: "https://onlyfans.com/1353172156/onlyfans", must: []string{"ID", "UserName"}, mustValue: []string{"1353172156", "onlyfans"}},
+		{url: "https://onlyfans.com/1353172156/onlyfans/?test=test", must: []string{"ID", "UserName"}, mustValue: []string{"1353172156", "onlyfans"}},
+		{url: "https://onlyfans.com/1353172156/onlyfans?test=test", must: []string{"ID", "UserName"}, mustValue: []string{"1353172156", "onlyfans"}},
 	}
 
 	userURLs := []testURLSt{
