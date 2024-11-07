@@ -189,38 +189,29 @@ func (c *OFAPI) GetPost(postID any) (model.Post, error) {
 }
 
 func (c *OFAPI) GetAllBookmarkes(bookmarkMedia BookmarkMedia) ([]model.Post, error) {
-	endpoint := "/all"
+	var endpoint string
 	switch bookmarkMedia {
-	case BookmarkPhotos:
-		endpoint = "/photos"
-	case BookmarkVideos:
-		endpoint = "/videos"
-	case BookmarkAudios:
-		endpoint = "/audios"
-	case BookmarkOther:
-		endpoint = "/other"
-	case BookmarkLocked:
-		endpoint = "/locked"
+	case BookmarkPhotos, BookmarkVideos, BookmarkAudios, BookmarkOther, BookmarkLocked:
+		endpoint = "/" + string(bookmarkMedia)
+	default:
+		endpoint = "/all"
 	}
 	return c.getBookmarkesByEndPoint(endpoint)
 }
 
 func (c *OFAPI) GetBookmark(bookmarkID any, bookmarkMedia BookmarkMedia) ([]model.Post, error) {
-	endpoint := "/all"
+	var endpoint string
 	switch bookmarkMedia {
-	case BookmarkPhotos:
-		endpoint = "/photos"
-	case BookmarkVideos:
-		endpoint = "/videos"
-	case BookmarkAudios:
-		endpoint = "/audios"
-	case BookmarkOther:
-		endpoint = "/other"
-	case BookmarkLocked:
-		endpoint = "/locked"
+	case BookmarkPhotos, BookmarkVideos, BookmarkAudios, BookmarkOther, BookmarkLocked:
+		endpoint = "/" + string(bookmarkMedia)
+	default:
+		endpoint = "/all"
 	}
-	endpoint += fmt.Sprintf("/%v", bookmarkID)
-	return c.getBookmarkesByEndPoint(endpoint)
+	if bookmarkID != nil {
+		endpoint += fmt.Sprintf("/%v", bookmarkID)
+	}
+
+	return c.getBookmarkesByEndPoint(strings.TrimRight(endpoint, "/"))
 }
 
 func (c *OFAPI) getBookmarkesByEndPoint(endpoint string) ([]model.Post, error) {
@@ -282,13 +273,15 @@ func (c *OFAPI) GetUserStreamsByTime(userID int64, timePoint time.Time, timeDire
 }
 
 func (c *OFAPI) GetUserMediasByTime(userID int64, timePoint time.Time, timeDirection TimeDirection, userMedias UserMedias) ([]model.Post, error) {
-	endpoint := "/posts/medias"
+
+	var endpoint string
 	switch userMedias {
-	case UserMediasVideos:
-		endpoint = "/posts/videos"
-	case UserMediasPhotos:
-		endpoint = "/posts/photos"
+	case UserVideos, UserPhotos:
+		endpoint = "/posts/" + string(userMedias)
+	default:
+		endpoint = "/posts/medias"
 	}
+
 	return c.getUserPostsByEndPointAndTime(userID, endpoint, map[string]string{
 		"skip_users": "all",
 	}, timePoint, timeDirection)

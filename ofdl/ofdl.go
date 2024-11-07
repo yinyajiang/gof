@@ -5,6 +5,7 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/duke-git/lancet/v2/fileutil"
 	"github.com/duke-git/lancet/v2/maputil"
@@ -100,113 +101,51 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 		return nil, false, fmt.Errorf("not a valid of url: %s", url)
 	}
 
-	isScrapeAll := isOFHomeURL(url) || ofurlMatchs(url, reSubscriptions)
-	if isScrapeAll {
-		results, err = dl.scrapeAll()
+	if ofurlMatchs(url, reSubscriptions, reHome) {
+		results, err = dl.scrapeUser("", "")
 		return results, false, err
 	}
 
 	//chart
-	chartID, ok := ofurlFinds(url, "ID", reSingleChat)
+	founds, ok := ofurlFinds(nil, []string{"ID"}, url, reChat)
 	if ok {
-		chats := []scrapeIdentifier{
-			{
-				id:       chartID,
-				hintName: "",
-			},
-		}
-		results, err = dl.scrapeChats(chats)
-		return results, false, err
-	}
-
-	//charts
-	if ok = ofurlMatchs(url, reChats); ok {
-		subs, err := dl.api.GetSubscriptions(ofapi.SubscritionTypeActive)
-		if err != nil {
-			return nil, false, err
-		}
-		chats := []scrapeIdentifier{}
-		for _, sub := range subs {
-			chats = append(chats, scrapeIdentifier{
-				id:       sub.ID,
-				hintName: sub.Username,
-			})
-		}
-		results, err = dl.scrapeChats(chats)
+		results, err = dl.scrapeChat(founds[0])
 		return results, false, err
 	}
 
 	//collections list
-	listID, ok := ofurlFinds(url, "ID", reUserList)
+	founds, ok = ofurlFinds(nil, []string{"ID"}, url, reUserList)
 	if ok {
-		userList, err := dl.api.GetCollectionsListUsers(listID)
-		if err != nil {
-			return nil, false, err
-		}
-		users := []scrapeIdentifier{}
-		for _, user := range userList {
-			users = append(users, scrapeIdentifier{
-				id:       user.ID,
-				hintName: user.Username,
-			})
-		}
-		results, err = dl.scrapeUsers(users, ofapi.UserMediasAll)
+		results, err = dl.scrapeUserList(founds[0])
 		return results, false, err
 	}
 
 	//post
-	postID, userName, ok := ofurlFinds2(url, "PostID", "UserName", reSinglePost)
+	founds, ok = ofurlFinds([]string{"PostID", "UserName"}, nil, url, reSinglePost)
 	if ok {
-		post, err := dl.api.GetPost(postID)
+		post, err := dl.api.GetPost(founds[0])
 		if err != nil {
 			return nil, false, err
 		}
-		results, err = dl.collectMedias(userName, post)
+		results, err = dl.collectMedias(founds[1], post)
 		return results, true, err
 	}
 
-	//user, user media
-	userName, ok = ofurlFinds(url, "UserName", reUser)
+	//user
+	founds, ok = ofurlFinds([]string{"UserName"}, []string{"MediaType"}, url, reUserWithMediaType)
 	if ok {
-		results, err = dl.scrapeUserByName(userName, "")
+		results, err = dl.scrapeUser(founds[0], founds[1])
 		return results, false, err
 	}
 
-	//user media byType
-	userName, mediaType, ok := ofurlFinds2(url, "UserName", "MediaType", reUserByMediaType)
+	//bookmarks
+	founds, ok = ofurlFinds(nil, []string{"ID", "MediaType"}, url, reBookmarksWithMediaType)
 	if ok {
-		results, err = dl.scrapeUserByName(userName, mediaType)
+		results, err = dl.scrapeBookmarks(founds[0], founds[1])
 		return results, false, err
 	}
 
-	//all bookmarks
-	if ok = ofurlMatchs(url, reAllBookmarks); ok {
-		results, err = dl.scrapeBookmarks("", "")
-		return results, false, err
-	}
-
-	//all bookmarks by media type
-	mediaType, ok = ofurlFinds(url, "MediaType", reAllBookmarksByMediaType)
-	if ok {
-		results, err = dl.scrapeBookmarks("", mediaType)
-		return results, false, err
-	}
-
-	//single bookmark
-	bookmarkID, ok := ofurlFinds(url, "ID", reSingleBookmark)
-	if ok {
-		results, err = dl.scrapeBookmarks(bookmarkID, "")
-		return results, false, err
-	}
-
-	//single bookmark by media type
-	bookmarkID, mediaType, ok = ofurlFinds2(url, "ID", "MediaType", reSingleBookmarkByMediaType)
-	if ok {
-		results, err = dl.scrapeBookmarks(bookmarkID, mediaType)
-		return results, false, err
-	}
-
-	results, err = dl.scrapeAll()
+	results, err = dl.scrapeUser("", "")
 	return results, false, err
 }
 
@@ -219,79 +158,6 @@ func (dl *OFDl) FetchFileInfo(downloadURL string) (info common.HttpFileInfo, err
 
 func (dl *OFDl) FetchDRMDecrypt(downloadURL string) (string, error) {
 	return dl.drmapi.GetDecryptedKeyAuto(parseDRMURL(downloadURL))
-}
-
-func (dl *OFDl) scrapeAll() ([]DownloadableMedia, error) {
-	subs, err := dl.api.GetSubscriptions(ofapi.SubscritionTypeActive)
-	if err != nil {
-		return nil, err
-	}
-	users := []scrapeIdentifier{}
-	for _, sub := range subs {
-		users = append(users, scrapeIdentifier{
-			id:       sub.ID,
-			hintName: sub.Username,
-		})
-	}
-	return dl.scrapeUsers(users, ofapi.UserMediasAll)
-}
-
-func (dl *OFDl) scrapeBookmarks(allEmptryOrID string, allEmptryOrMediaType string) ([]DownloadableMedia, error) {
-	if allEmptryOrID == "" {
-		bookmarks, err := dl.api.GetAllBookmarkes(bookmarkMediaType(allEmptryOrMediaType))
-		if err != nil {
-			return nil, err
-		}
-		return dl.collecMutilMedias("bookmarks."+allEmptryOrMediaType, bookmarks)
-	}
-	bookmarks, err := dl.api.GetBookmark(allEmptryOrID, bookmarkMediaType(allEmptryOrMediaType))
-	if err != nil {
-		return nil, err
-	}
-	return dl.collecMutilMedias("bookmark."+allEmptryOrMediaType, bookmarks)
-}
-
-func (dl *OFDl) scrapeUserByName(userName string, allEmptryOrMediaType string) ([]DownloadableMedia, error) {
-	usr, err := dl.api.GetUserByUsername(userName)
-	if err != nil {
-		return nil, err
-	}
-	return dl.scrapeUsers([]scrapeIdentifier{
-		{
-			id:       usr.ID,
-			hintName: userName,
-		},
-	}, userMediasType(allEmptryOrMediaType))
-}
-
-func (dl *OFDl) scrapeUsers(users []scrapeIdentifier, userMedias ofapi.UserMedias) ([]DownloadableMedia, error) {
-	funs := []collecFunc{}
-	for _, user := range users {
-		funs = append(funs, func() (string, []model.Post, error) {
-			userID, e := toInt64(user.id)
-			if e != nil {
-				return "", nil, e
-			}
-			posts, e := dl.api.GetUserMedias(userID, userMedias)
-			return user.hintName, posts, e
-		})
-	}
-	return parallelCollecPostsMedias(dl, funs)
-}
-
-func (dl *OFDl) scrapeChats(chats []scrapeIdentifier) ([]DownloadableMedia, error) {
-	funs := []collecFunc{}
-	for _, chat := range chats {
-		funs = append(funs, func() (string, []model.Post, error) {
-			chatID, e := toInt64(chat.id)
-			if e != nil {
-				return "", nil, e
-			}
-			posts, e := dl.api.GetChatMessages(chatID)
-			return "", posts, e
-		})
-	}
-	return parallelCollecPostsMedias(dl, funs)
 }
 
 func (dl *OFDl) Download(dir string, media DownloadableMedia) error {
@@ -317,6 +183,145 @@ func (dl *OFDl) Download(dir string, media DownloadableMedia) error {
 	args = append(args, drminfo.DRM.Manifest.Dash)
 	fmt.Println(args)
 	return nil
+}
+
+func (dl *OFDl) scrapeUser(allEmptryOrUserName string, allEmptryOrMediaType string) ([]DownloadableMedia, error) {
+	users := []scrapeIdentifier{}
+	if allEmptryOrUserName == "" {
+		subs, err := dl.api.GetSubscriptions(ofapi.SubscritionTypeActive)
+		if err != nil {
+			return nil, err
+		}
+		for _, sub := range subs {
+			users = append(users, scrapeIdentifier{
+				id:       sub.ID,
+				hintName: sub.Username,
+			})
+		}
+
+	} else {
+		usr, err := dl.api.GetUserByUsername(allEmptryOrUserName)
+		if err != nil {
+			return nil, err
+		}
+		users = []scrapeIdentifier{
+			{
+				id:       usr.ID,
+				hintName: allEmptryOrUserName,
+			},
+		}
+	}
+	return dl.scrapeUsersByIdentifier(users, allEmptryOrMediaType)
+}
+
+func (dl *OFDl) scrapeBookmarks(allEmptryOrID string, allEmptryOrMediaType string) ([]DownloadableMedia, error) {
+	if allEmptryOrID == "" {
+		bookmarks, err := dl.api.GetAllBookmarkes(ofapi.BookmarkMedia(allEmptryOrMediaType))
+		if err != nil {
+			return nil, err
+		}
+		return dl.collecMutilMedias("bookmarks."+allEmptryOrMediaType, bookmarks)
+	}
+	bookmarks, err := dl.api.GetBookmark(allEmptryOrID, ofapi.BookmarkMedia(allEmptryOrMediaType))
+	if err != nil {
+		return nil, err
+	}
+	return dl.collecMutilMedias("bookmark."+allEmptryOrMediaType, bookmarks)
+}
+
+func (dl *OFDl) scrapeUserList(allEmptryOrID string) ([]DownloadableMedia, error) {
+	if allEmptryOrID == "" {
+		return dl.scrapeUser("", "")
+	} else {
+		userList, err := dl.api.GetCollectionsListUsers(allEmptryOrID)
+		if err != nil {
+			return nil, err
+		}
+		users := []scrapeIdentifier{}
+		for _, user := range userList {
+			users = append(users, scrapeIdentifier{
+				id:       user.ID,
+				hintName: user.Username,
+			})
+		}
+		return dl.scrapeUsersByIdentifier(users, "")
+	}
+}
+
+type scrapeIdentifier struct {
+	id       any
+	hintName string
+}
+
+func (dl *OFDl) scrapeUsersByIdentifier(users []scrapeIdentifier, allEmptryOrMediaType string) ([]DownloadableMedia, error) {
+	funs := []collecFunc{}
+	for _, user := range users {
+		funs = append(funs, func() (string, []model.Post, error) {
+			userID, e := toInt64(user.id)
+			if e != nil {
+				return "", nil, e
+			}
+			posts, e := dl.api.GetUserMedias(userID, ofapi.UserMedias(allEmptryOrMediaType))
+			return user.hintName, posts, e
+		})
+	}
+	return dl.parallelCollecFunc(funs)
+}
+
+func (dl *OFDl) scrapeChat(allEmptryOrID string) ([]DownloadableMedia, error) {
+	if allEmptryOrID == "" {
+		return dl.scrapeUser("", "")
+	} else {
+		chatID, err := toInt64(allEmptryOrID)
+		if err != nil {
+			return nil, err
+		}
+		posts, err := dl.api.GetChatMessages(chatID)
+		if err != nil {
+			return nil, err
+		}
+		return dl.collecMutilMedias("", posts)
+	}
+}
+
+type collecFunc func() (hintName string, posts []model.Post, error error)
+
+func (dl *OFDl) parallelCollecFunc(funs []collecFunc) ([]DownloadableMedia, error) {
+	ch := make(chan struct{}, 5)
+	results := []DownloadableMedia{}
+	var firstErr error
+	var lock sync.Mutex
+	var wg sync.WaitGroup
+	for _, fun := range funs {
+		ch <- struct{}{}
+		wg.Add(1)
+		go func() {
+			defer func() {
+				<-ch
+				wg.Done()
+			}()
+			hintName, posts, err := fun()
+			lock.Lock()
+			defer lock.Unlock()
+
+			var medias []DownloadableMedia
+			if err == nil {
+				medias, err = dl.collecMutilMedias(hintName, posts)
+			}
+			if err != nil {
+				if firstErr == nil {
+					firstErr = err
+				}
+			} else {
+				results = append(results, medias...)
+			}
+		}()
+	}
+	wg.Wait()
+	if len(results) != 0 {
+		return results, nil
+	}
+	return results, firstErr
 }
 
 func (dl *OFDl) collecMutilMedias(hintName string, posts []model.Post) ([]DownloadableMedia, error) {

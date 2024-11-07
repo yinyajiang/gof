@@ -14,23 +14,23 @@ const (
 	SubscritionTypeAll     SubscritionType = "all"
 )
 
-type UserMedias int
+type UserMedias string
 
 const (
-	UserMediasVideos UserMedias = 0
-	UserMediasPhotos UserMedias = 1
-	UserMediasAll    UserMedias = 2
+	UserVideos UserMedias = "videos"
+	UserPhotos UserMedias = "photos"
+	UserAll    UserMedias = "all"
 )
 
-type BookmarkMedia int
+type BookmarkMedia string
 
 const (
-	BookmarkPhotos BookmarkMedia = 0
-	BookmarkVideos BookmarkMedia = 1
-	BookmarkAudios BookmarkMedia = 2
-	BookmarkOther  BookmarkMedia = 3
-	BookmarkLocked BookmarkMedia = 4
-	BookmarkAll    BookmarkMedia = 5
+	BookmarkPhotos BookmarkMedia = "photos"
+	BookmarkVideos BookmarkMedia = "videos"
+	BookmarkAudios BookmarkMedia = "audios"
+	BookmarkOther  BookmarkMedia = "other"
+	BookmarkLocked BookmarkMedia = "locked"
+	BookmarkAll    BookmarkMedia = "all"
 )
 
 type SubscribeFilter func(sub model.Subscription) bool

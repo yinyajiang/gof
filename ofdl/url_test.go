@@ -6,331 +6,252 @@ import (
 )
 
 func TestOFURL(t *testing.T) {
-	homeURLs := []string{
-		"https://onlyfans.com/?test=test",
-		"https://onlyfans.com?test=test",
-		"https://onlyfans.com/",
-		"https://onlyfans.com",
+	homeURLs := []testURLSt{
+		{url: "https://onlyfans.com/?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com", must: []string{}, mustValue: []string{}},
 	}
 
-	subscriptionsURLs := []string{
-		"https://onlyfans.com/my/collections/user-lists/subscribers/active",
-		"https://onlyfans.com/my/collections/user-lists/subscribers/active/",
-		"https://onlyfans.com/my/collections/user-lists/subscribers/active/?test=test",
-		"https://onlyfans.com/my/collections/user-lists/subscribers/active?test=test",
-		"https://onlyfans.com/my/collections/user-lists/subscriptions/active",
-		"https://onlyfans.com/my/collections/user-lists/subscriptions/active/",
-		"https://onlyfans.com/my/collections/user-lists/subscriptions/active/?test=test",
-		"https://onlyfans.com/my/collections/user-lists/subscriptions/active?test=test",
+	subscriptionsURLs := []testURLSt{
+		{url: "https://onlyfans.com/my/collections/user-lists/subscribers", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/subscribers/", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/subscribers/?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/subscribers?test=test", must: []string{}, mustValue: []string{}},
+
+		{url: "https://onlyfans.com/my/collections/user-lists/subscribers/expired", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/subscribers/expired/", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/subscribers/expired/?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/subscribers/expired?test=test", must: []string{}, mustValue: []string{}},
+
+		{url: "https://onlyfans.com/my/collections/user-lists/restricted", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/restricted/", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/restricted/?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/restricted?test=test", must: []string{}, mustValue: []string{}},
+
+		{url: "https://onlyfans.com/my/collections/user-lists/blocked", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/blocked/", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/blocked/?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/blocked?test=test", must: []string{}, mustValue: []string{}},
+
+		{url: "https://onlyfans.com/my/collections/user-lists/subscribers/active", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/subscribers/active/", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/subscribers/active/?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/subscribers/active?test=test", must: []string{}, mustValue: []string{}},
+
+		{url: "https://onlyfans.com/my/collections/user-lists/subscriptions/active", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/subscriptions/active/", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/subscriptions/active/?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/subscriptions/active?test=test", must: []string{}, mustValue: []string{}},
 	}
 
-	chartsURLs := []string{
-		"https://onlyfans.com/my/chats",
-		"https://onlyfans.com/my/chats/",
-		"https://onlyfans.com/my/chats/?test=test",
-		"https://onlyfans.com/my/chats?test=test",
+	chatURLs := []testURLSt{
+		{url: "https://onlyfans.com/my/chats", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/chats/", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/chats/?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/chats?test=test", must: []string{}, mustValue: []string{}},
+
+		{url: "https://onlyfans.com/my/chats/chat/342724494", must: []string{"ID"}, mustValue: []string{"342724494"}},
+		{url: "https://onlyfans.com/my/chats/chat/342724494/", must: []string{"ID"}, mustValue: []string{"342724494"}},
+		{url: "https://onlyfans.com/my/chats/chat/342724494/?test=test", must: []string{"ID"}, mustValue: []string{"342724494"}},
+		{url: "https://onlyfans.com/my/chats/chat/342724494?test=test", must: []string{"ID"}, mustValue: []string{"342724494"}},
 	}
 
-	chatURLs := []testFindKeyURLSt{
-		{url: "https://onlyfans.com/my/chats/chat/342724494", key: "ID", value: "342724494"},
-		{url: "https://onlyfans.com/my/chats/chat/342724494/", key: "ID", value: "342724494"},
-		{url: "https://onlyfans.com/my/chats/chat/342724494/?test=test", key: "ID", value: "342724494"},
-		{url: "https://onlyfans.com/my/chats/chat/342724494?test=test", key: "ID", value: "342724494"},
+	userListURLs := []testURLSt{
+		{url: "https://onlyfans.com/my/collections/user-lists", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists/?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/user-lists?test=test", must: []string{}, mustValue: []string{}},
+
+		{url: "https://onlyfans.com/my/collections/user-lists/1141544940", must: []string{"ID"}, mustValue: []string{"1141544940"}},
+		{url: "https://onlyfans.com/my/collections/user-lists/1141544940/", must: []string{"ID"}, mustValue: []string{"1141544940"}},
+		{url: "https://onlyfans.com/my/collections/user-lists/1141544940/?test=test", must: []string{"ID"}, mustValue: []string{"1141544940"}},
+		{url: "https://onlyfans.com/my/collections/user-lists/1141544940?test=test", must: []string{"ID"}, mustValue: []string{"1141544940"}},
 	}
 
-	userListURLs := []testFindKeyURLSt{
-		{url: "https://onlyfans.com/my/collections/user-lists/1141544940", key: "ID", value: "1141544940"},
-		{url: "https://onlyfans.com/my/collections/user-lists/1141544940/", key: "ID", value: "1141544940"},
-		{url: "https://onlyfans.com/my/collections/user-lists/1141544940/?test=test", key: "ID", value: "1141544940"},
-		{url: "https://onlyfans.com/my/collections/user-lists/1141544940?test=test", key: "ID", value: "1141544940"},
+	postURLs := []testURLSt{
+		{url: "https://onlyfans.com/1353172156/onlyfans", must: []string{"PostID", "UserName"}, mustValue: []string{"1353172156", "onlyfans"}},
+		{url: "https://onlyfans.com/1353172156/onlyfans/?test=test", must: []string{"PostID", "UserName"}, mustValue: []string{"1353172156", "onlyfans"}},
+		{url: "https://onlyfans.com/1353172156/onlyfans?test=test", must: []string{"PostID", "UserName"}, mustValue: []string{"1353172156", "onlyfans"}},
 	}
 
-	postURLs := []testFindKeyURLSt2{
-		{url: "https://onlyfans.com/1353172156/onlyfans", key1: "PostID", value1: "1353172156", key2: "UserName", value2: "onlyfans"},
-		{url: "https://onlyfans.com/1353172156/onlyfans/?test=test", key1: "PostID", value1: "1353172156", key2: "UserName", value2: "onlyfans"},
-		{url: "https://onlyfans.com/1353172156/onlyfans?test=test", key1: "PostID", value1: "1353172156", key2: "UserName", value2: "onlyfans"},
+	userURLs := []testURLSt{
+		{url: "https://onlyfans.com/kira.asia.ts", must: []string{"UserName"}, mustValue: []string{"kira.asia.ts"}},
+		{url: "https://onlyfans.com/kira.asia.ts/", must: []string{"UserName"}, mustValue: []string{"kira.asia.ts"}},
+		{url: "https://onlyfans.com/kira.asia.ts/?test=test", must: []string{"UserName"}, mustValue: []string{"kira.asia.ts"}},
+		{url: "https://onlyfans.com/kira.asia.ts?test=test", must: []string{"UserName"}, mustValue: []string{"kira.asia.ts"}},
+
+		{url: "https://onlyfans.com/olivoil2/media", must: []string{"UserName", "MediaType"}, mustValue: []string{"olivoil2", "media"}},
+		{url: "https://onlyfans.com/olivoil2/media/", must: []string{"UserName", "MediaType"}, mustValue: []string{"olivoil2", "media"}},
+		{url: "https://onlyfans.com/olivoil2/media/?test=test", must: []string{"UserName", "MediaType"}, mustValue: []string{"olivoil2", "media"}},
+		{url: "https://onlyfans.com/olivoil2/media?test=test", must: []string{"UserName", "MediaType"}, mustValue: []string{"olivoil2", "media"}},
+		{url: "https://onlyfans.com/olivoil2/videos", must: []string{"UserName", "MediaType"}, mustValue: []string{"olivoil2", "videos"}},
+		{url: "https://onlyfans.com/olivoil2/videos/", must: []string{"UserName", "MediaType"}, mustValue: []string{"olivoil2", "videos"}},
+		{url: "https://onlyfans.com/olivoil2/videos/?test=test", must: []string{"UserName", "MediaType"}, mustValue: []string{"olivoil2", "videos"}},
+		{url: "https://onlyfans.com/olivoil2/videos?test=test", must: []string{"UserName", "MediaType"}, mustValue: []string{"olivoil2", "videos"}},
+		{url: "https://onlyfans.com/olivoil2/photos", must: []string{"UserName", "MediaType"}, mustValue: []string{"olivoil2", "photos"}},
+		{url: "https://onlyfans.com/olivoil2/photos/", must: []string{"UserName", "MediaType"}, mustValue: []string{"olivoil2", "photos"}},
+		{url: "https://onlyfans.com/olivoil2/photos/?test=test", must: []string{"UserName", "MediaType"}, mustValue: []string{"olivoil2", "photos"}},
+		{url: "https://onlyfans.com/olivoil2/photos?test=test", must: []string{"UserName", "MediaType"}, mustValue: []string{"olivoil2", "photos"}},
 	}
 
-	userURLs := []testFindKeyURLSt{
-		{url: "https://onlyfans.com/kira.asia.ts", key: "UserName", value: "kira.asia.ts"},
-		{url: "https://onlyfans.com/kira.asia.ts/", key: "UserName", value: "kira.asia.ts"},
-		{url: "https://onlyfans.com/kira.asia.ts/?test=test", key: "UserName", value: "kira.asia.ts"},
-		{url: "https://onlyfans.com/kira.asia.ts?test=test", key: "UserName", value: "kira.asia.ts"},
+	bookmarkURLs := []testURLSt{
+		{url: "https://onlyfans.com/my/collections/bookmarks", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/bookmarks?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/?test=test", must: []string{}, mustValue: []string{}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all?test=test", must: []string{}, mustValue: []string{}},
+
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/photos", must: []string{"MediaType"}, mustValue: []string{"photos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/photos/", must: []string{"MediaType"}, mustValue: []string{"photos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/photos/?test=test", must: []string{"MediaType"}, mustValue: []string{"photos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/photos?test=test", must: []string{"MediaType"}, mustValue: []string{"photos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/videos", must: []string{"MediaType"}, mustValue: []string{"videos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/videos/", must: []string{"MediaType"}, mustValue: []string{"videos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/videos/?test=test", must: []string{"MediaType"}, mustValue: []string{"videos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/videos?test=test", must: []string{"MediaType"}, mustValue: []string{"videos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/audios", must: []string{"MediaType"}, mustValue: []string{"audios"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/audios/", must: []string{"MediaType"}, mustValue: []string{"audios"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/audios/?test=test", must: []string{"MediaType"}, mustValue: []string{"audios"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/audios?test=test", must: []string{"MediaType"}, mustValue: []string{"audios"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/other", must: []string{"MediaType"}, mustValue: []string{"other"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/other/", must: []string{"MediaType"}, mustValue: []string{"other"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/other/?test=test", must: []string{"MediaType"}, mustValue: []string{"other"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/other?test=test", must: []string{"MediaType"}, mustValue: []string{"other"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/locked", must: []string{"MediaType"}, mustValue: []string{"locked"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/locked/", must: []string{"MediaType"}, mustValue: []string{"locked"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/locked/?test=test", must: []string{"MediaType"}, mustValue: []string{"locked"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/all/locked?test=test", must: []string{"MediaType"}, mustValue: []string{"locked"}},
+
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194", must: []string{"ID"}, mustValue: []string{"1979194"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/", must: []string{"ID"}, mustValue: []string{"1979194"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/?test=test", must: []string{"ID"}, mustValue: []string{"1979194"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194?test=test", must: []string{"ID"}, mustValue: []string{"1979194"}},
+
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/photos", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "photos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/photos/", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "photos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/photos/?test=test", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "photos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/photos?test=test", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "photos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/videos", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "videos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/videos/", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "videos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/videos/?test=test", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "videos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/videos?test=test", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "videos"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/audios", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "audios"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/audios/", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "audios"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/audios/?test=test", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "audios"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/audios?test=test", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "audios"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/other", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "other"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/other/", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "other"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/other/?test=test", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "other"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/other?test=test", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "other"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/locked", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "locked"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/locked/", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "locked"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/locked/?test=test", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "locked"}},
+		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/locked?test=test", must: []string{"ID", "MediaType"}, mustValue: []string{"1979194", "locked"}},
 	}
 
-	userMediaTypeURLs := []testFindKeyURLSt2{
-		{url: "https://onlyfans.com/olivoil2/media", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "media"},
-		{url: "https://onlyfans.com/olivoil2/media/", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "media"},
-		{url: "https://onlyfans.com/olivoil2/media/?test=test", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "media"},
-		{url: "https://onlyfans.com/olivoil2/media?test=test", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "media"},
-		{url: "https://onlyfans.com/olivoil2/videos", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "videos"},
-		{url: "https://onlyfans.com/olivoil2/videos/", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "videos"},
-		{url: "https://onlyfans.com/olivoil2/videos/?test=test", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "videos"},
-		{url: "https://onlyfans.com/olivoil2/videos?test=test", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "videos"},
-		{url: "https://onlyfans.com/olivoil2/photos", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "photos"},
-		{url: "https://onlyfans.com/olivoil2/photos/", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "photos"},
-		{url: "https://onlyfans.com/olivoil2/photos/?test=test", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "photos"},
-		{url: "https://onlyfans.com/olivoil2/photos?test=test", key1: "UserName", value1: "olivoil2", key2: "MediaType", value2: "photos"},
-	}
+	testShouldMatchURLs(t, reHome, homeURLs)
+	testShouldMatchURLs(t, reSubscriptions, subscriptionsURLs)
+	testShouldMatchURLs(t, reChat, chatURLs)
+	testShouldMatchURLs(t, reUserList, userListURLs)
+	testShouldMatchURLs(t, reSinglePost, postURLs)
+	testShouldMatchURLs(t, reUserWithMediaType, userURLs)
+	testShouldMatchURLs(t, reBookmarksWithMediaType, bookmarkURLs)
 
-	allBookmarkURLs := []string{
-		"https://onlyfans.com/my/collections/bookmarks",
-		"https://onlyfans.com/my/collections/bookmarks/",
-		"https://onlyfans.com/my/collections/bookmarks/?test=test",
-		"https://onlyfans.com/my/collections/bookmarks?test=test",
-		"https://onlyfans.com/my/collections/bookmarks/all",
-		"https://onlyfans.com/my/collections/bookmarks/all/",
-		"https://onlyfans.com/my/collections/bookmarks/all/?test=test",
-		"https://onlyfans.com/my/collections/bookmarks/all?test=test",
-	}
+	testShouldNotMatchURLs(t, []*regexp.Regexp{
+		/*reHome,*/ reSubscriptions, reChat,
+		reUserList, reSinglePost, reUserWithMediaType,
+		reBookmarksWithMediaType}, homeURLs)
 
-	allBookmarkByMediaTypeURLs := []testFindKeyURLSt{
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/photos", key: "MediaType", value: "photos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/photos/", key: "MediaType", value: "photos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/photos/?test=test", key: "MediaType", value: "photos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/photos?test=test", key: "MediaType", value: "photos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/videos", key: "MediaType", value: "videos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/videos/", key: "MediaType", value: "videos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/videos/?test=test", key: "MediaType", value: "videos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/videos?test=test", key: "MediaType", value: "videos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/audios", key: "MediaType", value: "audios"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/audios/", key: "MediaType", value: "audios"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/audios/?test=test", key: "MediaType", value: "audios"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/audios?test=test", key: "MediaType", value: "audios"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/other", key: "MediaType", value: "other"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/other/", key: "MediaType", value: "other"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/other/?test=test", key: "MediaType", value: "other"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/other?test=test", key: "MediaType", value: "other"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/locked", key: "MediaType", value: "locked"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/locked/", key: "MediaType", value: "locked"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/locked/?test=test", key: "MediaType", value: "locked"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/all/locked?test=test", key: "MediaType", value: "locked"},
-	}
+	testShouldNotMatchURLs(t, []*regexp.Regexp{
+		reHome /*reSubscriptions */, reChat,
+		reUserList, reSinglePost, reUserWithMediaType,
+		reBookmarksWithMediaType}, subscriptionsURLs)
 
-	singleBookmarkURLs := []testFindKeyURLSt{
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194", key: "ID", value: "1979194"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/", key: "ID", value: "1979194"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/?test=test", key: "ID", value: "1979194"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194?test=test", key: "ID", value: "1979194"},
-	}
+	testShouldNotMatchURLs(t, []*regexp.Regexp{
+		reHome, reSubscriptions, /*reChat */
+		reUserList, reSinglePost, reUserWithMediaType,
+		reBookmarksWithMediaType}, chatURLs)
 
-	singleBookmarkByMediaTypeURLs := []testFindKeyURLSt2{
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/photos", key1: "ID", value1: "1979194", key2: "MediaType", value2: "photos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/photos/", key1: "ID", value1: "1979194", key2: "MediaType", value2: "photos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/photos/?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "photos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/photos?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "photos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/videos", key1: "ID", value1: "1979194", key2: "MediaType", value2: "videos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/videos/", key1: "ID", value1: "1979194", key2: "MediaType", value2: "videos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/videos/?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "videos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/videos?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "videos"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/audios", key1: "ID", value1: "1979194", key2: "MediaType", value2: "audios"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/audios/", key1: "ID", value1: "1979194", key2: "MediaType", value2: "audios"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/audios/?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "audios"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/audios?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "audios"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/other", key1: "ID", value1: "1979194", key2: "MediaType", value2: "other"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/other/", key1: "ID", value1: "1979194", key2: "MediaType", value2: "other"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/other/?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "other"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/other?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "other"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/locked", key1: "ID", value1: "1979194", key2: "MediaType", value2: "locked"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/locked/", key1: "ID", value1: "1979194", key2: "MediaType", value2: "locked"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/locked/?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "locked"},
-		{url: "https://onlyfans.com/my/collections/bookmarks/1979194/locked?test=test", key1: "ID", value1: "1979194", key2: "MediaType", value2: "locked"},
-	}
+	testShouldNotMatchURLs(t, []*regexp.Regexp{
+		reHome, reSubscriptions, reChat,
+		/*reUserList,*/ reSinglePost, reUserWithMediaType,
+		reBookmarksWithMediaType}, userListURLs)
 
-	for _, url := range homeURLs {
-		if !isOFHomeURL(url) {
-			t.Fail()
-		}
-	}
+	testShouldNotMatchURLs(t, []*regexp.Regexp{
+		reHome, reSubscriptions, reChat,
+		reUserList /*reSinglePost,*/, reUserWithMediaType,
+		reBookmarksWithMediaType}, postURLs)
 
-	testMatchURLs(t, reSubscriptions, subscriptionsURLs)
-	testMatchURLs(t, reChats, chartsURLs)
-	testFindKeyURLs(t, reSingleChat, chatURLs)
-	testFindKeyURLs(t, reUserList, userListURLs)
-	testFindKey2URLs(t, reSinglePost, postURLs)
-	testFindKeyURLs(t, reUser, userURLs)
-	testFindKey2URLs(t, reUserByMediaType, userMediaTypeURLs)
-	testMatchURLs(t, reAllBookmarks, allBookmarkURLs)
-	testFindKeyURLs(t, reAllBookmarksByMediaType, allBookmarkByMediaTypeURLs)
-	testFindKeyURLs(t, reSingleBookmark, singleBookmarkURLs)
-	testFindKey2URLs(t, reSingleBookmarkByMediaType, singleBookmarkByMediaTypeURLs)
+	testShouldNotMatchURLs(t, []*regexp.Regexp{
+		reHome, reSubscriptions, reChat,
+		reUserList, reSinglePost, /*reUserWithMediaType,*/
+		reBookmarksWithMediaType}, userURLs)
 
-	testNotMatchURLs(t, reSubscriptions, homeURLs)
-	testNotMatchURLs(t, reChats, homeURLs)
-	testNotMatchURLs(t, reSingleChat, homeURLs)
-	testNotMatchURLs(t, reUserList, homeURLs)
-	testNotMatchURLs(t, reSinglePost, homeURLs)
-	testNotMatchURLs(t, reUser, homeURLs)
-	testNotMatchURLs(t, reUserByMediaType, homeURLs)
-	testNotMatchURLs(t, reAllBookmarks, homeURLs)
-	testNotMatchURLs(t, reSingleBookmark, homeURLs)
-	testNotMatchURLs(t, reAllBookmarksByMediaType, homeURLs)
-	testNotMatchURLs(t, reSingleBookmarkByMediaType, homeURLs)
-
-	testNotMatchURLs(t, reChats, subscriptionsURLs)
-	testNotMatchURLs(t, reSingleChat, subscriptionsURLs)
-	testNotMatchURLs(t, reUserList, subscriptionsURLs)
-	testNotMatchURLs(t, reSinglePost, subscriptionsURLs)
-	testNotMatchURLs(t, reUser, subscriptionsURLs)
-	testNotMatchURLs(t, reUserByMediaType, subscriptionsURLs)
-	testNotMatchURLs(t, reAllBookmarks, subscriptionsURLs)
-	testNotMatchURLs(t, reSingleBookmark, subscriptionsURLs)
-	testNotMatchURLs(t, reAllBookmarksByMediaType, subscriptionsURLs)
-	testNotMatchURLs(t, reSingleBookmarkByMediaType, subscriptionsURLs)
-
-	testNotMatchURLs(t, reSubscriptions, chartsURLs)
-	testNotMatchURLs(t, reSingleChat, chartsURLs)
-	testNotMatchURLs(t, reUserList, chartsURLs)
-	testNotMatchURLs(t, reSinglePost, chartsURLs)
-	testNotMatchURLs(t, reUser, chartsURLs)
-	testNotMatchURLs(t, reUserByMediaType, chartsURLs)
-	testNotMatchURLs(t, reAllBookmarks, chartsURLs)
-	testNotMatchURLs(t, reSingleBookmark, chartsURLs)
-	testNotMatchURLs(t, reAllBookmarksByMediaType, chartsURLs)
-	testNotMatchURLs(t, reSingleBookmarkByMediaType, chartsURLs)
-
-	testNotMatchKeyURLs(t, reSubscriptions, chatURLs)
-	testNotMatchKeyURLs(t, reChats, chatURLs)
-	testNotMatchKeyURLs(t, reUserList, chatURLs)
-	testNotMatchKeyURLs(t, reSinglePost, chatURLs)
-	testNotMatchKeyURLs(t, reUser, chatURLs)
-	testNotMatchKeyURLs(t, reUserByMediaType, chatURLs)
-	testNotMatchKeyURLs(t, reAllBookmarks, chatURLs)
-	testNotMatchKeyURLs(t, reSingleBookmark, chatURLs)
-	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, chatURLs)
-	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, chatURLs)
-
-	testNotMatchKeyURLs(t, reSubscriptions, userListURLs)
-	testNotMatchKeyURLs(t, reChats, userListURLs)
-	testNotMatchKeyURLs(t, reSingleChat, userListURLs)
-	testNotMatchKeyURLs(t, reSinglePost, userListURLs)
-	testNotMatchKeyURLs(t, reUser, userListURLs)
-	testNotMatchKeyURLs(t, reUserByMediaType, userListURLs)
-	testNotMatchKeyURLs(t, reAllBookmarks, userListURLs)
-	testNotMatchKeyURLs(t, reSingleBookmark, userListURLs)
-	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, userListURLs)
-	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, userListURLs)
-
-	testNotMatchKey2URLs(t, reSubscriptions, postURLs)
-	testNotMatchKey2URLs(t, reChats, postURLs)
-	testNotMatchKey2URLs(t, reSingleChat, postURLs)
-	testNotMatchKey2URLs(t, reUserList, postURLs)
-	testNotMatchKey2URLs(t, reUser, postURLs)
-	testNotMatchKey2URLs(t, reUserByMediaType, postURLs)
-	testNotMatchKey2URLs(t, reAllBookmarks, postURLs)
-	testNotMatchKey2URLs(t, reSingleBookmark, postURLs)
-	testNotMatchKey2URLs(t, reAllBookmarksByMediaType, postURLs)
-	testNotMatchKey2URLs(t, reSingleBookmarkByMediaType, postURLs)
-
-	testNotMatchKeyURLs(t, reSubscriptions, userURLs)
-	testNotMatchKeyURLs(t, reChats, userURLs)
-	testNotMatchKeyURLs(t, reSingleChat, userURLs)
-	testNotMatchKeyURLs(t, reUserList, userURLs)
-	testNotMatchKeyURLs(t, reSinglePost, userURLs)
-	testNotMatchKeyURLs(t, reUserByMediaType, userURLs)
-	testNotMatchKeyURLs(t, reAllBookmarks, userURLs)
-	testNotMatchKeyURLs(t, reSingleBookmark, userURLs)
-	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, userURLs)
-	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, userURLs)
-
-	testNotMatchKey2URLs(t, reSubscriptions, userMediaTypeURLs)
-	testNotMatchKey2URLs(t, reChats, userMediaTypeURLs)
-	testNotMatchKey2URLs(t, reSingleChat, userMediaTypeURLs)
-	testNotMatchKey2URLs(t, reUserList, userMediaTypeURLs)
-	testNotMatchKey2URLs(t, reSinglePost, userMediaTypeURLs)
-	testNotMatchKey2URLs(t, reUser, userMediaTypeURLs)
-	testNotMatchKey2URLs(t, reAllBookmarks, userMediaTypeURLs)
-	testNotMatchKey2URLs(t, reSingleBookmark, userMediaTypeURLs)
-	testNotMatchKey2URLs(t, reAllBookmarksByMediaType, userMediaTypeURLs)
-	testNotMatchKey2URLs(t, reSingleBookmarkByMediaType, userMediaTypeURLs)
-
-	testNotMatchURLs(t, reSubscriptions, allBookmarkURLs)
-	testNotMatchURLs(t, reChats, allBookmarkURLs)
-	testNotMatchURLs(t, reSingleChat, allBookmarkURLs)
-	testNotMatchURLs(t, reUserList, allBookmarkURLs)
-	testNotMatchURLs(t, reSinglePost, allBookmarkURLs)
-	testNotMatchURLs(t, reUser, allBookmarkURLs)
-	testNotMatchURLs(t, reUserByMediaType, allBookmarkURLs)
-	testNotMatchURLs(t, reSingleBookmark, allBookmarkURLs)
-	testNotMatchURLs(t, reAllBookmarksByMediaType, allBookmarkURLs)
-	testNotMatchURLs(t, reSingleBookmarkByMediaType, allBookmarkURLs)
-
-	testNotMatchKeyURLs(t, reSubscriptions, singleBookmarkURLs)
-	testNotMatchKeyURLs(t, reChats, singleBookmarkURLs)
-	testNotMatchKeyURLs(t, reSingleChat, singleBookmarkURLs)
-	testNotMatchKeyURLs(t, reUserList, singleBookmarkURLs)
-	testNotMatchKeyURLs(t, reSinglePost, singleBookmarkURLs)
-	testNotMatchKeyURLs(t, reUser, singleBookmarkURLs)
-	testNotMatchKeyURLs(t, reUserByMediaType, singleBookmarkURLs)
-	testNotMatchKeyURLs(t, reAllBookmarks, singleBookmarkURLs)
-	testNotMatchKeyURLs(t, reAllBookmarksByMediaType, singleBookmarkURLs)
-	testNotMatchKeyURLs(t, reSingleBookmarkByMediaType, singleBookmarkURLs)
+	testShouldNotMatchURLs(t, []*regexp.Regexp{
+		reHome, reSubscriptions, reChat,
+		reUserList, reSinglePost, reUserWithMediaType,
+		/*reBookmarksWithMediaType,*/}, bookmarkURLs)
 }
 
-func testMatchURLs(t *testing.T, re *regexp.Regexp, urls []string) {
-	for _, url := range urls {
-		if !ofurlMatchs(url, re) {
-			t.Logf("url should match: %s, re: %s", url, re.String())
-			t.Fail()
-		}
-	}
+type testURLSt struct {
+	url           string
+	must          []string
+	mustValue     []string
+	optional      []string
+	optionalValue []string
 }
 
-func testNotMatchURLs(t *testing.T, re *regexp.Regexp, urls []string) {
-	for _, url := range urls {
-		if ofurlMatchs(url, re) {
-			t.Logf("url should not match: %s, re: %s", url, re.String())
-			t.Fail()
-		}
-	}
-}
-
-type testFindKeyURLSt struct {
-	url   string
-	key   string
-	value string
-}
-
-func testFindKeyURLs(t *testing.T, re *regexp.Regexp, tests []testFindKeyURLSt) {
+func testShouldMatchURLs(t *testing.T, re *regexp.Regexp, tests []testURLSt) {
 	for _, ts := range tests {
-		if value, ok := ofurlFinds(ts.url, ts.key, re); !ok || value != ts.value {
+		if len(ts.must) == 0 && len(ts.optional) == 0 {
+			if !ofurlMatchs(ts.url, re) {
+				t.Logf("url should match: %s, re: %s", ts.url, re.String())
+				t.Fail()
+			}
+			continue
+		}
+
+		if (len(ts.must) != 0 || len(ts.mustValue) != 0) && len(ts.mustValue) != len(ts.must) {
+			t.Logf("mustValue length must be equal to must length")
+			t.Fail()
+		}
+
+		if (len(ts.optional) != 0 || len(ts.optionalValue) != 0) && len(ts.optionalValue) != len(ts.optional) {
+			t.Logf("optionalValue length must be equal to optional length")
+			t.Fail()
+		}
+
+		if founds, ok := ofurlFinds(ts.must, ts.optional, ts.url, re); !ok {
 			t.Logf("url should match: %s, re: %s", ts.url, re.String())
 			t.Fail()
+		} else {
+			for i := range ts.must {
+				if founds[i] != ts.mustValue[i] {
+					t.Logf("url should match: %s, re: %s", ts.url, re.String())
+					t.Fail()
+				}
+			}
+			for i := range ts.optional {
+				if founds[len(ts.must)+i] != ts.optionalValue[i] {
+					t.Logf("url should match: %s, re: %s", ts.url, re.String())
+					t.Fail()
+				}
+			}
 		}
 	}
 }
 
-func testNotMatchKeyURLs(t *testing.T, re *regexp.Regexp, tests []testFindKeyURLSt) {
+func testShouldNotMatchURLs(t *testing.T, res []*regexp.Regexp, tests []testURLSt) {
 	for _, ts := range tests {
-		if _, ok := ofurlFinds(ts.url, ts.key, re); ok {
-			t.Logf("url should not match: %s, re: %s", ts.url, re.String())
-			t.Fail()
-		}
-	}
-}
-
-type testFindKeyURLSt2 struct {
-	url    string
-	key1   string
-	value1 string
-	key2   string
-	value2 string
-}
-
-func testFindKey2URLs(t *testing.T, re *regexp.Regexp, tests []testFindKeyURLSt2) {
-	for _, ts := range tests {
-		if value1, value2, ok := ofurlFinds2(ts.url, ts.key1, ts.key2, re); !ok || value1 != ts.value1 || value2 != ts.value2 {
-			t.Logf("url should not match: %s, re: %s", ts.url, re.String())
-			t.Fail()
-		}
-	}
-}
-
-func testNotMatchKey2URLs(t *testing.T, re *regexp.Regexp, tests []testFindKeyURLSt2) {
-	for _, ts := range tests {
-		if _, _, ok := ofurlFinds2(ts.url, ts.key1, ts.key2, re); ok {
-			t.Logf("url should not match: %s, re: %s", ts.url, re.String())
-			t.Fail()
+		for _, re := range res {
+			if ok := ofurlMatchs(ts.url, re); ok {
+				t.Logf("url should not match: %s, re: %s", ts.url, re.String())
+				t.Fail()
+			}
 		}
 	}
 }

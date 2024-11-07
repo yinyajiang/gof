@@ -13,8 +13,3 @@ type DownloadableMedia struct {
 	Title       string
 	IsDrm       bool
 }
-
-type scrapeIdentifier struct {
-	id       any
-	hintName string
-}

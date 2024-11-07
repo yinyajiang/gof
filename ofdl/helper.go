@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/yinyajiang/gof/ofapi/model"
@@ -71,46 +70,6 @@ func times(times ...time.Time) time.Time {
 		}
 	}
 	return time.Time{}
-}
-
-type collecFunc func() (string, []model.Post, error)
-
-func parallelCollecPostsMedias(dl *OFDl, funs []collecFunc) ([]DownloadableMedia, error) {
-	ch := make(chan struct{}, 5)
-	results := []DownloadableMedia{}
-	var firstErr error
-	var lock sync.Mutex
-	var wg sync.WaitGroup
-	for _, fun := range funs {
-		ch <- struct{}{}
-		wg.Add(1)
-		go func() {
-			defer func() {
-				<-ch
-				wg.Done()
-			}()
-			hintName, posts, err := fun()
-			lock.Lock()
-			defer lock.Unlock()
-
-			var medias []DownloadableMedia
-			if err == nil {
-				medias, err = dl.collecMutilMedias(hintName, posts)
-			}
-			if err != nil {
-				if firstErr == nil {
-					firstErr = err
-				}
-			} else {
-				results = append(results, medias...)
-			}
-		}()
-	}
-	wg.Wait()
-	if len(results) != 0 {
-		return results, nil
-	}
-	return results, firstErr
 }
 
 func toInt64(id any) (int64, error) {
