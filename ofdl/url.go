@@ -10,7 +10,7 @@ import (
 
 var (
 	reHome                   = _mustCompile(gof.OFPostDomain + "$")
-	reSubscriptions          = _mustCompile(`/my/collections/user-lists/(?:subscribers|subscriptions|restricted|blocked)(?:/active)?`)
+	reSubscriptions          = _mustCompile(`/my/collections/user-lists/(?:subscribers|subscriptions|restricted|blocked)`)
 	reChat                   = _mustCompile(`/my/chats(?:/chat/(?P<ID>[0-9]+))?$`)
 	reUserList               = _mustCompile(`/my/collections/user-lists(?:/(?P<ID>[0-9]+))?$`)
 	reSinglePost             = _mustCompile(`/(?P<PostID>[0-9]+)/(?P<UserName>[A-Za-z0-9\.\-_]+)$`)
