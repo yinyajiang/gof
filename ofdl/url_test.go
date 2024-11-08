@@ -57,7 +57,7 @@ func TestOFURL(t *testing.T) {
 		{url: "https://onlyfans.com/my/chats/chat/342724494?test=test", must: []string{"ID"}, mustValue: []string{"342724494"}},
 	}
 
-	userListURLs := []testURLSt{
+	collectionsListURLs := []testURLSt{
 		{url: "https://onlyfans.com/my/collections/user-lists", must: []string{}, mustValue: []string{}},
 		{url: "https://onlyfans.com/my/collections/user-lists/", must: []string{}, mustValue: []string{}},
 		{url: "https://onlyfans.com/my/collections/user-lists/?test=test", must: []string{}, mustValue: []string{}},
@@ -156,44 +156,44 @@ func TestOFURL(t *testing.T) {
 	testShouldMatchURLs(t, reHome, homeURLs)
 	testShouldMatchURLs(t, reSubscriptions, subscriptionsURLs)
 	testShouldMatchURLs(t, reChat, chatURLs)
-	testShouldMatchURLs(t, reUserList, userListURLs)
+	testShouldMatchURLs(t, reCollectionsList, collectionsListURLs)
 	testShouldMatchURLs(t, reSinglePost, postURLs)
 	testShouldMatchURLs(t, reUserWithMediaType, userURLs)
 	testShouldMatchURLs(t, reBookmarksWithMediaType, bookmarkURLs)
 
 	testShouldNotMatchURLs(t, []*regexp.Regexp{
 		/*reHome,*/ reSubscriptions, reChat,
-		reUserList, reSinglePost, reUserWithMediaType,
+		reCollectionsList, reSinglePost, reUserWithMediaType,
 		reBookmarksWithMediaType}, homeURLs)
 
 	testShouldNotMatchURLs(t, []*regexp.Regexp{
 		reHome /*reSubscriptions */, reChat,
-		reUserList, reSinglePost, reUserWithMediaType,
+		reCollectionsList, reSinglePost, reUserWithMediaType,
 		reBookmarksWithMediaType}, subscriptionsURLs)
 
 	testShouldNotMatchURLs(t, []*regexp.Regexp{
 		reHome, reSubscriptions, /*reChat */
-		reUserList, reSinglePost, reUserWithMediaType,
+		reCollectionsList, reSinglePost, reUserWithMediaType,
 		reBookmarksWithMediaType}, chatURLs)
 
 	testShouldNotMatchURLs(t, []*regexp.Regexp{
 		reHome, reSubscriptions, reChat,
 		/*reUserList,*/ reSinglePost, reUserWithMediaType,
-		reBookmarksWithMediaType}, userListURLs)
+		reBookmarksWithMediaType}, collectionsListURLs)
 
 	testShouldNotMatchURLs(t, []*regexp.Regexp{
 		reHome, reSubscriptions, reChat,
-		reUserList /*reSinglePost,*/, reUserWithMediaType,
+		reCollectionsList /*reSinglePost,*/, reUserWithMediaType,
 		reBookmarksWithMediaType}, postURLs)
 
 	testShouldNotMatchURLs(t, []*regexp.Regexp{
 		reHome, reSubscriptions, reChat,
-		reUserList, reSinglePost, /*reUserWithMediaType,*/
+		reCollectionsList, reSinglePost, /*reUserWithMediaType,*/
 		reBookmarksWithMediaType}, userURLs)
 
 	testShouldNotMatchURLs(t, []*regexp.Regexp{
 		reHome, reSubscriptions, reChat,
-		reUserList, reSinglePost, reUserWithMediaType,
+		reCollectionsList, reSinglePost, reUserWithMediaType,
 		/*reBookmarksWithMediaType,*/}, bookmarkURLs)
 }
 

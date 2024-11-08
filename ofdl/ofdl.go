@@ -114,9 +114,9 @@ func (dl *OFDl) ScrapeMedias(url string) (results []DownloadableMedia, isSingleU
 	}
 
 	//collections list
-	founds, ok = ofurlFinds(nil, []string{"ID"}, url, reUserList)
+	founds, ok = ofurlFinds(nil, []string{"ID"}, url, reCollectionsList)
 	if ok {
-		results, err = dl.scrapeUserList(founds["ID"])
+		results, err = dl.scrapeCollectionsList(founds["ID"])
 		return results, false, err
 	}
 
@@ -229,7 +229,7 @@ func (dl *OFDl) scrapeBookmarks(allEmptryOrID string, allEmptryOrMediaType strin
 	return dl.collecMutilMedias("bookmark."+allEmptryOrMediaType, bookmarks)
 }
 
-func (dl *OFDl) scrapeUserList(allEmptryOrID string) ([]DownloadableMedia, error) {
+func (dl *OFDl) scrapeCollectionsList(allEmptryOrID string) ([]DownloadableMedia, error) {
 	if allEmptryOrID == "" {
 		return dl.scrapeUser("", "")
 	} else {

@@ -12,7 +12,7 @@ var (
 	reHome                   = _mustCompile(gof.OFPostDomain + "$")
 	reSubscriptions          = _mustCompile(`/my/collections/user-lists/(?:subscribers|subscriptions|restricted|blocked)`)
 	reChat                   = _mustCompile(`/my/chats(?:/chat/(?P<ID>[0-9]+))?$`)
-	reUserList               = _mustCompile(`/my/collections/user-lists(?:/(?P<ID>[0-9]+))?$`)
+	reCollectionsList        = _mustCompile(`/my/collections/user-lists(?:/(?P<ID>[0-9]+))?$`)
 	reSinglePost             = _mustCompile(`/(?P<ID>[0-9]+)/(?P<UserName>[A-Za-z0-9\.\-_]+)$`)
 	reUserWithMediaType      = _mustCompile(`/(?P<UserName>[A-Za-z0-9\.\-_]+)(?:/(?P<MediaType>media|videos|photos))?$`)
 	reBookmarksWithMediaType = _mustCompile(`/my/collections/bookmarks(?:/(?:all|(?P<ID>[0-9]+))(?:/(?P<MediaType>photos|videos|audios|other|locked))?)?$`)
