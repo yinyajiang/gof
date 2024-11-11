@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duke-git/lancet/v2/fileutil"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/yinyajiang/gof/common"
 )
@@ -72,25 +73,31 @@ func loadCachedRules(cacheDir string) (rules, error) {
 	return rules, err
 }
 
-func loadURLRules(rulesURL []string) (rules, error) {
+func loadURLRules(rulesURI []string) (rules, error) {
 	const fixURL = "https://raw.githubusercontent.com/deviint/onlyfans-dynamic-rules/main/dynamicRules.json"
 
-	if len(rulesURL) == 0 {
-		rulesURL = []string{fixURL}
+	if len(rulesURI) == 0 {
+		rulesURI = []string{fixURL}
 	} else {
-		if !slice.Contain(rulesURL, fixURL) {
-			rulesURL = append(rulesURL, fixURL)
+		if !slice.Contain(rulesURI, fixURL) {
+			rulesURI = append(rulesURI, fixURL)
 		}
 	}
 
-	pruleList := make([]*rules, len(rulesURL))
+	pruleList := make([]*rules, len(rulesURI))
 	wg := sync.WaitGroup{}
-	for i, url := range rulesURL {
+	for i, url := range rulesURI {
 		wg.Add(1)
 		go func(i int, url string) {
 			defer wg.Done()
 			var rules rules
-			e := common.HttpGetUnmarshal(url, &rules)
+
+			var e error
+			if !strings.HasPrefix(url, "http") && fileutil.IsExist(url) {
+				e = common.FileUnmarshal(url, &rules)
+			} else {
+				e = common.HttpGetUnmarshal(url, &rules)
+			}
 			if e != nil {
 				fmt.Printf("get rules from %s failed, err: %v\n", url, e)
 			} else {
@@ -152,5 +159,6 @@ func cacheAuthInfo(cacheDir string, auth AuthInfo) {
 		fmt.Printf("marshal auth failed, err: %v\n", err)
 		return
 	}
+	fileutil.CreateDir(cacheDir)
 	os.WriteFile(filepath.Join(cacheDir, "auth"), data, 0644)
 }

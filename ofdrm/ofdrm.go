@@ -26,8 +26,8 @@ type OFDRM struct {
 type OFDRMConfig struct {
 	ClientID                  []byte
 	ClientPrivateKey          []byte
-	ClientIDURL               string
-	ClientPrivateKeyURL       string
+	ClientIDURI               string
+	ClientPrivateKeyURI       string
 	ClientCacheDir            string
 	CachePriority             bool
 	OptionalCDRMProjectServer []string
@@ -35,7 +35,7 @@ type OFDRMConfig struct {
 
 func NewOFDRM(req *ofapi.Req, config OFDRMConfig) (*OFDRM, error) {
 	if len(config.ClientID) == 0 || len(config.ClientPrivateKey) == 0 {
-		clientID, clientPrivateKey, err := LoadClient(config.ClientCacheDir, config.ClientIDURL, config.ClientPrivateKeyURL, config.CachePriority)
+		clientID, clientPrivateKey, err := LoadClient(config.ClientCacheDir, config.ClientIDURI, config.ClientPrivateKeyURI, config.CachePriority)
 		if err != nil {
 			return nil, err
 		}
@@ -242,11 +242,6 @@ func (c *OFDRM) loadWidevineServiceCert(urlpath string) (*widevinepb.DrmCertific
 	return cert, nil
 }
 
-func (c *OFDRM) drmHttpGet(drm DRMInfo) (body []byte, err error) {
-	_, body, err = c.drmHttpGetResp(drm, true)
-	return
-}
-
 func (c *OFDRM) HTTPHeaders(drm DRMInfo) map[string]string {
 	return c.req.UnsignedHeaders(map[string]string{
 		"Cookie": fmt.Sprintf("CloudFront-Policy=%s; CloudFront-Signature=%s; CloudFront-Key-Pair-Id=%s",
@@ -263,4 +258,9 @@ func (c *OFDRM) drmHttpGetResp(drm DRMInfo, readAll ...bool) (resp *http.Respons
 	}
 	common.AddHeaders(req, nil, c.HTTPHeaders(drm))
 	return common.HttpDo(req, readAll...)
+}
+
+func (c *OFDRM) drmHttpGet(drm DRMInfo) (body []byte, err error) {
+	_, body, err = c.drmHttpGetResp(drm, true)
+	return
 }

@@ -1,11 +1,13 @@
 package ofdl
 
 import (
+	"crypto/md5"
 	"fmt"
 	"path"
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/duke-git/lancet/v2/fileutil"
 	"github.com/duke-git/lancet/v2/maputil"
@@ -27,19 +29,20 @@ type Config struct {
 	AuthInfo ofapi.AuthInfo
 	CacheDir string
 
-	OptionalRulesURL []string
+	OptionalRulesURI []string
 	CachePriority    bool
 
-	ClientIDURL               string
-	ClientPrivateKeyURL       string
+	ClientIDURI               string
+	ClientPrivateKeyURI       string
 	OptionalCDRMProjectServer []string
 
 	DependentTools DependentTools
 }
 
 type OFDl struct {
-	api    *ofapi.OFAPI
-	drmapi *ofdrm.OFDRM
+	api      *ofapi.OFAPI
+	drmapi   *ofdrm.OFDRM
+	cacheDir string
 
 	dependentTools DependentTools
 }
@@ -57,18 +60,18 @@ func NewOFDL(config Config) (*OFDl, error) {
 
 	api, err := ofapi.NewOFAPI(ofapi.Config{
 		AuthInfo:         config.AuthInfo,
-		OptionalRulesURL: config.OptionalRulesURL,
-		RulesCacheDir:    path.Join(config.CacheDir, "of_rules"),
+		OptionalRulesURI: config.OptionalRulesURI,
+		RulesCacheDir:    path.Join(config.CacheDir, "of_apis"),
 		CachePriority:    config.CachePriority,
 	})
 	if err != nil {
 		return nil, err
 	}
 	drmapi, err := ofdrm.NewOFDRM(api.Req(), ofdrm.OFDRMConfig{
-		ClientIDURL:               config.ClientIDURL,
-		ClientPrivateKeyURL:       config.ClientPrivateKeyURL,
+		ClientIDURI:               config.ClientIDURI,
+		ClientPrivateKeyURI:       config.ClientPrivateKeyURI,
 		OptionalCDRMProjectServer: config.OptionalCDRMProjectServer,
-		ClientCacheDir:            path.Join(config.CacheDir, "of_client"),
+		ClientCacheDir:            path.Join(config.CacheDir, "of_drms"),
 		CachePriority:             config.CachePriority,
 	})
 	if err != nil {
@@ -78,6 +81,7 @@ func NewOFDL(config Config) (*OFDl, error) {
 		api:            api,
 		drmapi:         drmapi,
 		dependentTools: config.DependentTools,
+		cacheDir:       path.Join(config.CacheDir, "of_dls"),
 	}
 	if err := dl.checkDependentTools(); err != nil {
 		return nil, err
@@ -156,8 +160,56 @@ func (dl *OFDl) FetchFileInfo(downloadURL string) (info common.HttpFileInfo, err
 	return dl.drmapi.GetFileInfo(parseDRMURL(downloadURL))
 }
 
-func (dl *OFDl) FetchDRMDecrypt(downloadURL string) (string, error) {
-	return dl.drmapi.GetDecryptedKeyAuto(parseDRMURL(downloadURL))
+func (dl *OFDl) FetchDRMSecrets(downloadURL string, disableCache_ ...bool) (DRMSecrets, error) {
+	type cachedSecrets struct {
+		DecryptKey string
+		Headers    map[string]string
+		Time       time.Time
+	}
+
+	drmSecretsFromCacheFun := func(secrets cachedSecrets, cookiesCache string) DRMSecrets {
+		cookies := secrets.Headers["Cookie"]
+		delete(secrets.Headers, "Cookie")
+		return DRMSecrets{
+			DecryptKey:         secrets.DecryptKey,
+			Headers:            secrets.Headers,
+			Cookies:            cookies,
+			NetscapeCookieFile: cookiesCache,
+			TimeStamp:          secrets.Time,
+		}
+	}
+
+	disableCache := len(disableCache_) > 0 && disableCache_[0]
+
+	var secrets cachedSecrets
+	drminfo := parseDRMURL(downloadURL)
+	urlmd5 := fmt.Sprintf("%x", md5.Sum([]byte(drminfo.DRM.Manifest.Dash)))
+	secretsCachePath := path.Join(dl.cacheDir, "secrets", urlmd5)
+	netscapeCookiePath := secretsCachePath + ".cookies"
+	if !disableCache && fileutil.IsExist(secretsCachePath) && fileutil.IsExist(netscapeCookiePath) {
+		err := common.FileUnmarshal(secretsCachePath, &secrets)
+		if err == nil {
+			return drmSecretsFromCacheFun(secrets, netscapeCookiePath), nil
+		}
+	}
+
+	decript, err := dl.drmapi.GetDecryptedKeyAuto(drminfo)
+	if err != nil {
+		return DRMSecrets{}, err
+	}
+	headers := dl.drmapi.HTTPHeaders(drminfo)
+	secrets = cachedSecrets{
+		DecryptKey: decript,
+		Headers:    headers,
+		Time:       time.Now(),
+	}
+	common.FileMarshal(secretsCachePath, secrets)
+	netscape := common.ConvertCookieToNetscape(secrets.Headers["Cookie"], gof.OFApiDomain)
+	err = common.WriteFile(netscapeCookiePath, []byte(netscape))
+	if err != nil {
+		return DRMSecrets{}, err
+	}
+	return drmSecretsFromCacheFun(secrets, netscapeCookiePath), nil
 }
 
 func (dl *OFDl) Download(dir string, media DownloadableMedia) error {
@@ -182,6 +234,7 @@ func (dl *OFDl) Download(dir string, media DownloadableMedia) error {
 	}
 	args = append(args, drminfo.DRM.Manifest.Dash)
 	fmt.Println(args)
+	dl.FetchDRMSecrets(media.DownloadURL)
 	return nil
 }
 
@@ -194,8 +247,8 @@ func (dl *OFDl) scrapeUser(allEmptryOrUserName string, allEmptryOrMediaType stri
 		}
 		for _, sub := range subs {
 			users = append(users, scrapeIdentifier{
-				id:       sub.ID,
-				hintName: sub.Username,
+				id:        sub.ID,
+				hintTitle: sub.Username,
 			})
 		}
 
@@ -206,8 +259,8 @@ func (dl *OFDl) scrapeUser(allEmptryOrUserName string, allEmptryOrMediaType stri
 		}
 		users = []scrapeIdentifier{
 			{
-				id:       usr.ID,
-				hintName: allEmptryOrUserName,
+				id:        usr.ID,
+				hintTitle: allEmptryOrUserName,
 			},
 		}
 	}
@@ -240,8 +293,8 @@ func (dl *OFDl) scrapeCollectionsList(allEmptryOrID string) ([]DownloadableMedia
 		users := []scrapeIdentifier{}
 		for _, user := range userList {
 			users = append(users, scrapeIdentifier{
-				id:       user.ID,
-				hintName: user.Username,
+				id:        user.ID,
+				hintTitle: user.Username,
 			})
 		}
 		return dl.scrapeUsersByIdentifier(users, "")
@@ -249,8 +302,8 @@ func (dl *OFDl) scrapeCollectionsList(allEmptryOrID string) ([]DownloadableMedia
 }
 
 type scrapeIdentifier struct {
-	id       any
-	hintName string
+	id        any
+	hintTitle string
 }
 
 func (dl *OFDl) scrapeUsersByIdentifier(users []scrapeIdentifier, allEmptryOrMediaType string) ([]DownloadableMedia, error) {
@@ -262,7 +315,7 @@ func (dl *OFDl) scrapeUsersByIdentifier(users []scrapeIdentifier, allEmptryOrMed
 				return "", nil, e
 			}
 			posts, e := dl.api.GetUserMedias(userID, ofapi.UserMedias(allEmptryOrMediaType))
-			return user.hintName, posts, e
+			return user.hintTitle, posts, e
 		})
 	}
 	return dl.parallelCollecFunc(funs)
@@ -284,7 +337,7 @@ func (dl *OFDl) scrapeChat(allEmptryOrID string) ([]DownloadableMedia, error) {
 	}
 }
 
-type collecFunc func() (hintName string, posts []model.Post, error error)
+type collecFunc func() (hintTitle string, posts []model.Post, error error)
 
 func (dl *OFDl) parallelCollecFunc(funs []collecFunc) ([]DownloadableMedia, error) {
 	ch := make(chan struct{}, 5)
@@ -300,13 +353,13 @@ func (dl *OFDl) parallelCollecFunc(funs []collecFunc) ([]DownloadableMedia, erro
 				<-ch
 				wg.Done()
 			}()
-			hintName, posts, err := fun()
+			hintTitle, posts, err := fun()
 			lock.Lock()
 			defer lock.Unlock()
 
 			var medias []DownloadableMedia
 			if err == nil {
-				medias, err = dl.collecMutilMedias(hintName, posts)
+				medias, err = dl.collecMutilMedias(hintTitle, posts)
 			}
 			if err != nil {
 				if firstErr == nil {
@@ -324,14 +377,14 @@ func (dl *OFDl) parallelCollecFunc(funs []collecFunc) ([]DownloadableMedia, erro
 	return results, firstErr
 }
 
-func (dl *OFDl) collecMutilMedias(hintName string, posts []model.Post) ([]DownloadableMedia, error) {
+func (dl *OFDl) collecMutilMedias(hintTitle string, posts []model.Post) ([]DownloadableMedia, error) {
 	if len(posts) == 0 {
 		return nil, fmt.Errorf("posts is empty")
 	}
 
 	results := []DownloadableMedia{}
 	for _, post := range posts {
-		medias, e := dl.collectMedias(hintName, post)
+		medias, e := dl.collectMedias(hintTitle, post)
 		if e == nil {
 			results = append(results, medias...)
 		}
@@ -346,26 +399,26 @@ func (dl *OFDl) collecMutilMedias(hintName string, posts []model.Post) ([]Downlo
 	return results, nil
 }
 
-func (dl *OFDl) collectMedias(hintName string, post model.Post) ([]DownloadableMedia, error) {
+func (dl *OFDl) collectMedias(hintTitle string, post model.Post) ([]DownloadableMedia, error) {
 	if len(post.Media) == 0 {
 		return nil, fmt.Errorf("no media found")
 	}
-	hintName = strings.Trim(hintName, ".")
+	hintTitle = strings.Trim(hintTitle, ".")
 
 	mediaSet := make(map[int64]DownloadableMedia)
 	for i, media := range post.Media {
 		if !media.CanView || media.Files == nil {
 			continue
 		}
-		if hintName == "" {
-			hintName = post.FromUser.Username
+		if hintTitle == "" {
+			hintTitle = post.FromUser.Username
 		}
 		dm := DownloadableMedia{
 			PostID:  post.ID,
 			MediaID: media.ID,
 			Type:    media.Type,
 			Time:    times(media.CreatedAt, post.CreatedAt, post.PostedAt),
-			Title:   strings.TrimLeft(fmt.Sprintf("%s.%d.%d", hintName, post.ID, i), "."),
+			Title:   strings.TrimLeft(fmt.Sprintf("%s.%d.%d", hintTitle, post.ID, i), "."),
 		}
 
 		if media.Files.Drm == nil {

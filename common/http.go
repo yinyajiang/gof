@@ -128,3 +128,35 @@ func ParseHttpFileInfo(resp *http.Response) HttpFileInfo {
 	headerInfo.ContentLength = resp.ContentLength
 	return headerInfo
 }
+
+func ConvertCookieToNetscape(cookieStr string, domain string) string {
+	var result strings.Builder
+	// Write header comment
+	result.WriteString("# Netscape HTTP Cookie File\n")
+	result.WriteString("# https://curl.haxx.se/rfc/cookie_spec.html\n")
+	result.WriteString("# This is a generated file!  Do not edit.\n\n")
+
+	// Parse cookies
+	cookies := strings.Split(cookieStr, ";")
+	for _, cookie := range cookies {
+		cookie = strings.TrimSpace(cookie)
+		if cookie == "" {
+			continue
+		}
+
+		parts := strings.SplitN(cookie, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		name := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		// Format: domain HTTP_ONLY path SECURE expiry name value
+		// Using default values: HTTP_ONLY=FALSE, path=/, SECURE=FALSE, expiry=0 (session cookie)
+		line := fmt.Sprintf("%s\tFALSE\t/\tFALSE\t0\t%s\t%s\n",
+			domain, name, value)
+		result.WriteString(line)
+	}
+	return result.String()
+}
