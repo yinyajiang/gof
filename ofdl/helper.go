@@ -10,7 +10,7 @@ import (
 	"github.com/yinyajiang/gof/ofdrm"
 )
 
-func composeDRMURL(drm ofdrm.DRMInfo) string {
+func composeDrmUri(drm ofdrm.DRMInfo) string {
 	return strings.Join([]string{
 		drm.Manifest.Dash,
 		drm.Signature.Dash.CloudFrontPolicy,
@@ -21,8 +21,8 @@ func composeDRMURL(drm ofdrm.DRMInfo) string {
 	}, ",")
 }
 
-func parseDRMURL(drmUrl string) ofdrm.DRMInfo {
-	split := strings.Split(drmUrl, ",")
+func parseDrmUri(drmUri string) ofdrm.DRMInfo {
+	split := strings.Split(drmUri, ",")
 	if len(split) != 6 {
 		return ofdrm.DRMInfo{}
 	}
@@ -57,7 +57,7 @@ func parseDRMURL(drmUrl string) ofdrm.DRMInfo {
 }
 
 func isDrmURL(url string) bool {
-	return parseDRMURL(url).Manifest.Dash != ""
+	return parseDrmUri(url).Manifest.Dash != ""
 }
 
 func times(times ...time.Time) time.Time {

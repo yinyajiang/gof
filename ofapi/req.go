@@ -14,14 +14,9 @@ import (
 
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/yinyajiang/gof"
 	"github.com/yinyajiang/gof/common"
 )
-
-var debug = false
-
-func SetDebug(d bool) {
-	debug = d
-}
 
 type Req struct {
 	authInfo AuthInfo
@@ -47,7 +42,7 @@ func (r *Req) Get(urlpath string, params any) (data []byte, err error) {
 		return nil, err
 	}
 	_, data, err = common.HttpDo(req, true)
-	if debug {
+	if gof.IsDebug() {
 		fmt.Println(string(data))
 	}
 	return
@@ -121,12 +116,16 @@ func (r *Req) UnsignedHeaders(mergedHeaders map[string]string) map[string]string
 		delete(mergedHeaders, "Cookie")
 	}
 
-	return maputil.Merge(map[string]string{
+	merged := maputil.Merge(map[string]string{
 		"User-Agent": r.authInfo.UserAgent,
 		"Accept":     "*/*",
 		"X-BC":       r.authInfo.X_BC,
 		"Cookie":     cookie,
 	}, mergedHeaders)
+	if merged["Cookie"] == "" {
+		delete(merged, "Cookie")
+	}
+	return merged
 }
 
 func (r *Req) SignedHeaders(urlpath string) map[string]string {

@@ -19,32 +19,25 @@ import (
 )
 
 type OFDRM struct {
-	req *ofapi.Req
-	cfg OFDRMConfig
+	req               *ofapi.Req
+	cdrmProjectServer []string
+	wvd               *wvdSt
 }
 
 type OFDRMConfig struct {
-	ClientID                  []byte
-	ClientPrivateKey          []byte
-	ClientIDURI               string
-	ClientPrivateKeyURI       string
-	ClientCacheDir            string
-	CachePriority             bool
+	WVDOption                 DRMWVDOption
 	OptionalCDRMProjectServer []string
 }
 
 func NewOFDRM(req *ofapi.Req, config OFDRMConfig) (*OFDRM, error) {
-	if len(config.ClientID) == 0 || len(config.ClientPrivateKey) == 0 {
-		clientID, clientPrivateKey, err := LoadClient(config.ClientCacheDir, config.ClientIDURI, config.ClientPrivateKeyURI, config.CachePriority)
-		if err != nil {
-			return nil, err
-		}
-		config.ClientID = clientID
-		config.ClientPrivateKey = clientPrivateKey
+	wvd, err := loadWVD(config.WVDOption)
+	if err != nil && len(config.OptionalCDRMProjectServer) == 0 {
+		return nil, err
 	}
 	return &OFDRM{
-		req: req,
-		cfg: config,
+		req:               req,
+		cdrmProjectServer: config.OptionalCDRMProjectServer,
+		wvd:               wvd,
 	}, nil
 }
 
@@ -52,10 +45,14 @@ func (c *OFDRM) Req() *ofapi.Req {
 	return c.req
 }
 
+func (c *OFDRM) WVD() *wvdSt {
+	return c.wvd
+}
+
 func (c *OFDRM) GetDecryptedKeyAuto(drm DRMInfo) (string, error) {
 	var clientErr error
 	var key string
-	if len(c.cfg.ClientID) != 0 {
+	if c.wvd != nil {
 		key, clientErr = c.GetDecryptedKeyByClient(drm)
 		if clientErr == nil {
 			return key, nil
@@ -103,7 +100,7 @@ func (c *OFDRM) GetFileInfo(drm DRMInfo) (common.HttpFileInfo, error) {
 func (c *OFDRM) GetDecryptedKeyByServer(drm DRMInfo) (string, error) {
 	const fixedServerURL = "https://cdrm-project.com/"
 
-	serverURLs := c.cfg.OptionalCDRMProjectServer
+	serverURLs := c.cdrmProjectServer
 	if !slice.Contain(serverURLs, fixedServerURL) {
 		serverURLs = append(serverURLs, fixedServerURL)
 	}
@@ -183,7 +180,7 @@ func (c *OFDRM) getDRMPSSH(drm DRMInfo) (string, error) {
 
 func (c *OFDRM) getWidevineKeys(urlpath, pssh string) ([]*widevine.Key, error) {
 	device, err := widevine.NewDevice(
-		widevine.FromRaw(c.cfg.ClientID, c.cfg.ClientPrivateKey),
+		widevine.FromWVD(bytes.NewReader(c.wvd.WVD())),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create device: %w", err)

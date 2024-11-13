@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/yinyajiang/gof"
 )
 
 func AddHeaders(req *http.Request, addHeaders, setHeaders map[string]string) {
@@ -24,25 +26,12 @@ func IsSuccessfulStatusCode(statusCode int) bool {
 	return statusCode >= 200 && statusCode < 300
 }
 
-var proxy *url.URL
-
-func SetProxy(proxyURL string) {
-	if proxyURL == "" {
-		return
-	}
-	u, err := url.Parse(proxyURL)
-	if err != nil {
-		return
-	}
-	proxy = u
-}
-
 func HttpClient() *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			Proxy: func(*http.Request) (*url.URL, error) {
-				return proxy, nil
+				return gof.Proxy(), nil
 			},
 		},
 	}
