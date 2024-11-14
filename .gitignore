@@ -1,4 +1,6 @@
 
 .DS_Store
-cmd/client_id
-cmd/client_private_key
+cmd/ofie_server/config.json
+cmd/ofie_server/cache
+cmd/wvd_compose/wvd_compose
+

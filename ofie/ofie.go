@@ -1,4 +1,4 @@
-package ofdl
+package ofie
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -25,88 +24,51 @@ import (
 	"github.com/yinyajiang/gof/ofdrm"
 )
 
-type DependentTools struct {
-	YtDlpPath  string
-	FFMpegPath string
-	Mp4Decrypt string
-}
-
 type Config struct {
-	AuthInfo ofapi.AuthInfo
-	CacheDir string
-
-	OptionalRulesURI []string
-	CachePriority    bool
-
-	WVDURI                    string
-	RawWVDIDURI               string
-	RawPrivateKeyURI          string
-	OptionalCDRMProjectServer []string
-
-	DependentTools DependentTools
+	OFAuthConfig ofapi.OFAuthConfig
+	OFDRMConfig  ofdrm.OFDRMConfig
+	CacheDir     string
+	Debug        bool
 }
 
-type OFDl struct {
+type OFIE struct {
 	api      *ofapi.OFAPI
 	drmapi   *ofdrm.OFDRM
 	cacheDir string
-
-	dependentTools DependentTools
 }
 
-func NewOFDL(config Config) (*OFDl, error) {
-	if config.DependentTools.YtDlpPath == "" {
-		config.DependentTools.YtDlpPath = "yt-dlp"
+func NewOFIE(config Config) (*OFIE, error) {
+	if config.OFAuthConfig.RulesCacheDir == "" {
+		config.OFAuthConfig.RulesCacheDir = path.Join(config.CacheDir, "of_apis")
 	}
-	if config.DependentTools.FFMpegPath == "" {
-		config.DependentTools.FFMpegPath = "ffmpeg"
+	if config.OFDRMConfig.WVDOption.ClientCacheDir == "" {
+		config.OFDRMConfig.WVDOption.ClientCacheDir = path.Join(config.CacheDir, "of_drms")
 	}
-	if config.DependentTools.Mp4Decrypt == "" {
-		config.DependentTools.Mp4Decrypt = "mp4decrypt"
+	if config.Debug {
+		gof.SetDebug(true)
 	}
-
-	api, err := ofapi.NewOFAPI(ofapi.Config{
-		AuthInfo:         config.AuthInfo,
-		OptionalRulesURI: config.OptionalRulesURI,
-		RulesCacheDir:    path.Join(config.CacheDir, "of_apis"),
-		CachePriority:    config.CachePriority,
-	})
+	api := ofapi.NewOFAPI(config.OFAuthConfig)
+	drmapi, err := ofdrm.NewOFDRM(api.Req(), config.OFDRMConfig)
 	if err != nil {
 		return nil, err
 	}
-	drmapi, err := ofdrm.NewOFDRM(api.Req(), ofdrm.OFDRMConfig{
-		WVDOption: ofdrm.DRMWVDOption{
-			ClientIDURI:         config.RawWVDIDURI,
-			ClientPrivateKeyURI: config.RawPrivateKeyURI,
-			ClientCacheDir:      path.Join(config.CacheDir, "of_drms"),
-			CachePriority:       config.CachePriority,
-		},
-		OptionalCDRMProjectServer: config.OptionalCDRMProjectServer,
-	})
-	if err != nil {
-		return nil, err
+	ie := &OFIE{
+		api:      api,
+		drmapi:   drmapi,
+		cacheDir: path.Join(config.CacheDir, "of_ies"),
 	}
-	dl := &OFDl{
-		api:            api,
-		drmapi:         drmapi,
-		dependentTools: config.DependentTools,
-		cacheDir:       path.Join(config.CacheDir, "of_dls"),
-	}
-	if err := dl.checkDependentTools(); err != nil {
-		return nil, err
-	}
-	return dl, nil
+	return ie, nil
 }
 
-func (dl *OFDl) OFAPI() *ofapi.OFAPI {
-	return dl.api
+func (ie *OFIE) OFAPI() *ofapi.OFAPI {
+	return ie.api
 }
 
-func (dl *OFDl) OFDRM() *ofdrm.OFDRM {
-	return dl.drmapi
+func (ie *OFIE) OFDRM() *ofdrm.OFDRM {
+	return ie.drmapi
 }
 
-func (dl *OFDl) Serve(ctx context.Context, addr string, debug bool) {
+func (ie *OFIE) Serve(ctx context.Context, addr string) {
 	app := fiber.New(
 		fiber.Config{
 			DisableStartupMessage: true,
@@ -117,7 +79,7 @@ func (dl *OFDl) Serve(ctx context.Context, addr string, debug bool) {
 		<-ctx.Done()
 		app.Shutdown()
 	}()
-	if debug {
+	if gof.IsDebug() {
 		app.Use(logger.New())
 	} else {
 		app.Use(mrecover.New())
@@ -126,34 +88,45 @@ func (dl *OFDl) Serve(ctx context.Context, addr string, debug bool) {
 		log.Println("shutdown, close")
 		return nil
 	})
-	dl.AddFiberRoutes(app)
-	app.Listen(addr)
+	app.Hooks().OnListen(func(c fiber.ListenData) error {
+		log.Println("listen on => ", addr)
+		return nil
+	})
+	ie.AddFiberRoutes(app)
+	err := app.Listen(addr)
+	if err != nil {
+		log.Println("listen error => ", err)
+	}
 }
 
-func (dl *OFDl) AddFiberRoutes(router fiber.Router) {
-	addOFDlFiberRoutes(dl, router)
+func (ie *OFIE) AddFiberRoutes(router fiber.Router) {
+	addOFIEFiberRoutes(ie, router)
 }
 
-func (dl *OFDl) ExtractMedias(url string, disableCache_ ...bool) (ret ExtractResult, err error) {
+func (ie *OFIE) ExtractMedias(url string, disableCache_ ...bool) (ret ExtractResult, err error) {
 	if url == "" {
 		url = gof.OFPostDomain
 	}
 	if !isOFURL(url) {
 		return ExtractResult{}, fmt.Errorf("not a valid of url: %s", url)
 	}
+	defer collectTitle(&ret)
+
 	disableCache := len(disableCache_) > 0 && disableCache_[0]
 
 	type cachedMediaInfo struct {
 		Medias      []MediaInfo
 		IsSingleURL bool
 		Time        time.Time
+		Title       string
 	}
 	cached := cachedMediaInfo{}
-	if !disableCache && dl.cacheUnmarshal("medias", url, &cached) && cached.Time.After(time.Now().Add(-time.Hour*24)) {
+	if !disableCache && ie.cacheUnmarshal("medias", url, &cached) && cached.Time.After(time.Now().Add(-time.Hour*24)) {
 		return ExtractResult{
 			Medias:      cached.Medias,
 			IsSingleURL: cached.IsSingleURL,
 			IsFromCache: true,
+			Title:       cached.Title,
 		}, nil
 	}
 
@@ -162,39 +135,41 @@ func (dl *OFDl) ExtractMedias(url string, disableCache_ ...bool) (ret ExtractRes
 			cached.Medias = ret.Medias
 			cached.IsSingleURL = ret.IsSingleURL
 			cached.Time = time.Now()
-			dl.cacheMarshal("medias", url, cached)
+			cached.Title = strings.Split(ret.Medias[0].Title, titleSeparator)[0]
+			ie.cacheMarshal("medias", url, cached)
 		} else {
-			dl.cacheDelete("medias", url)
+			ie.cacheDelete("medias", url)
+			err = ie.convertApiError(err)
 		}
 	}()
 
 	if ofurlMatchs(url, reSubscriptions, reHome) {
-		ret.Medias, err = dl.extractUser("", "")
+		ret.Medias, err = ie.extractUser("", "")
 		return
 	}
 
 	//chart
 	founds, ok := ofurlFinds(nil, []string{"ID"}, url, reChat)
 	if ok {
-		ret.Medias, err = dl.extractChat(founds["ID"])
+		ret.Medias, err = ie.extractChat(founds["ID"])
 		return
 	}
 
 	//collections list
 	founds, ok = ofurlFinds(nil, []string{"ID"}, url, reCollectionsList)
 	if ok {
-		ret.Medias, err = dl.extractCollectionsList(founds["ID"])
+		ret.Medias, err = ie.extractCollectionsList(founds["ID"])
 		return
 	}
 
 	//post
 	founds, ok = ofurlFinds([]string{"ID", "UserName"}, nil, url, reSinglePost)
 	if ok {
-		post, e := dl.api.GetPost(founds["ID"])
+		post, e := ie.api.GetPost(founds["ID"])
 		if e != nil {
 			return ExtractResult{}, e
 		}
-		ret.Medias, err = dl.collectMedias(founds["UserName"], post)
+		ret.Medias, err = ie.collectMedias(founds["UserName"], post)
 		ret.IsSingleURL = true
 		return
 	}
@@ -202,37 +177,47 @@ func (dl *OFDl) ExtractMedias(url string, disableCache_ ...bool) (ret ExtractRes
 	//user
 	founds, ok = ofurlFinds([]string{"UserName"}, []string{"MediaType"}, url, reUserWithMediaType)
 	if ok {
-		ret.Medias, err = dl.extractUser(founds["UserName"], founds["MediaType"])
+		ret.Medias, err = ie.extractUser(founds["UserName"], founds["MediaType"])
 		return
 	}
 
 	//bookmarks
 	founds, ok = ofurlFinds(nil, []string{"ID", "MediaType"}, url, reBookmarksWithMediaType)
 	if ok {
-		ret.Medias, err = dl.extractBookmarks(founds["ID"], founds["MediaType"])
+		ret.Medias, err = ie.extractBookmarks(founds["ID"], founds["MediaType"])
 		return
 	}
 
-	ret.Medias, err = dl.extractUser("", "")
+	ret.Medias, err = ie.extractUser("", "")
 	return
 }
 
-func (dl *OFDl) FetchFileInfo(mediaURI string) (info common.HttpFileInfo, err error) {
+func (ie *OFIE) FetchFileInfo(mediaURI string) (info common.HttpFileInfo, err error) {
+	defer func() {
+		err = ie.convertApiError(err)
+	}()
+
 	if !isDrmURL(mediaURI) {
-		return dl.api.Req().GetFileInfo(mediaURI)
+		return ie.api.Req().GetFileInfo(mediaURI)
 	}
-	return dl.drmapi.GetFileInfo(parseDrmUri(mediaURI))
+	return ie.drmapi.GetFileInfo(parseDrmUri(mediaURI))
 }
 
-func (dl *OFDl) GetNonDRMSecrets() (NonDRMSecrets, error) {
+func (ie *OFIE) GetNonDRMSecrets() (NonDRMSecrets, error) {
 	return NonDRMSecrets{
 		Headers: map[string]string{
-			"User-Agent": dl.api.UserAgent(),
+			"User-Agent": ie.api.UserAgent(),
 		},
 	}, nil
 }
 
-func (dl *OFDl) FetchDRMSecrets(mediaURI string, disableCache_ ...bool) (DRMSecrets, error) {
+func (ie *OFIE) FetchDRMSecrets(mediaURI string, disableCache_ ...bool) (ret DRMSecrets, err error) {
+	defer func() {
+		if err != nil {
+			err = ie.convertApiError(err)
+		}
+	}()
+
 	type cachedSecrets struct {
 		DecryptKey string
 		Headers    map[string]string
@@ -262,54 +247,28 @@ func (dl *OFDl) FetchDRMSecrets(mediaURI string, disableCache_ ...bool) (DRMSecr
 	disableCache := len(disableCache_) > 0 && disableCache_[0]
 
 	var secrets cachedSecrets
-	if !disableCache && dl.cacheUnmarshal("secrets", drminfo.DRM.Manifest.Dash, &secrets) {
+	if !disableCache && ie.cacheUnmarshal("secrets", drminfo.DRM.Manifest.Dash, &secrets) {
 		return drmSecretsFromCacheFun(secrets), nil
 	}
 
-	decript, err := dl.drmapi.GetDecryptedKeyAuto(drminfo)
+	decript, err := ie.drmapi.GetDecryptedKeyAuto(drminfo)
 	if err != nil {
 		return DRMSecrets{}, err
 	}
-	headers := dl.drmapi.HTTPHeaders(drminfo)
+	headers := ie.drmapi.HTTPHeaders(drminfo)
 	secrets = cachedSecrets{
 		DecryptKey: decript,
 		Headers:    headers,
 		Time:       time.Now(),
 	}
-	dl.cacheMarshal("secrets", drminfo.DRM.Manifest.Dash, secrets)
+	ie.cacheMarshal("secrets", drminfo.DRM.Manifest.Dash, secrets)
 	return drmSecretsFromCacheFun(secrets), nil
 }
 
-func (dl *OFDl) Download(dir string, media MediaInfo) error {
-	if !media.IsDrm {
-		return nil
-	}
-	args := []string{
-		"--no-part",
-		"--restrict-filenames",
-		"-o",
-		fmt.Sprintf(`%s/%%(title)s.%%(ext)s`, dir),
-		"--format",
-		"bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best[ext=m4a]",
-	}
-	drminfo := parseDrmUri(media.MediaURI)
-	for k, v := range dl.drmapi.HTTPHeaders(drminfo) {
-		if k == "Accept" {
-			continue
-		}
-		args = append(args, "--add-header")
-		args = append(args, fmt.Sprintf("%s:%s", k, v))
-	}
-	args = append(args, drminfo.DRM.Manifest.Dash)
-	fmt.Println(args)
-	dl.FetchDRMSecrets(media.MediaURI)
-	return nil
-}
-
-func (dl *OFDl) extractUser(allEmptryOrUserName string, allEmptryOrMediaType string) ([]MediaInfo, error) {
+func (ie *OFIE) extractUser(allEmptryOrUserName string, allEmptryOrMediaType string) ([]MediaInfo, error) {
 	users := []extractIdentifier{}
 	if allEmptryOrUserName == "" {
-		subs, err := dl.api.GetSubscriptions(ofapi.SubscritionTypeActive)
+		subs, err := ie.api.GetSubscriptions(ofapi.SubscritionTypeActive)
 		if err != nil {
 			return nil, err
 		}
@@ -321,7 +280,7 @@ func (dl *OFDl) extractUser(allEmptryOrUserName string, allEmptryOrMediaType str
 		}
 
 	} else {
-		usr, err := dl.api.GetUserByUsername(allEmptryOrUserName)
+		usr, err := ie.api.GetUserByUsername(allEmptryOrUserName)
 		if err != nil {
 			return nil, err
 		}
@@ -332,29 +291,29 @@ func (dl *OFDl) extractUser(allEmptryOrUserName string, allEmptryOrMediaType str
 			},
 		}
 	}
-	return dl.extractUsersByIdentifier(users, allEmptryOrMediaType)
+	return ie.extractUsersByIdentifier(users, allEmptryOrMediaType)
 }
 
-func (dl *OFDl) extractBookmarks(allEmptryOrID string, allEmptryOrMediaType string) ([]MediaInfo, error) {
+func (ie *OFIE) extractBookmarks(allEmptryOrID string, allEmptryOrMediaType string) ([]MediaInfo, error) {
 	if allEmptryOrID == "" {
-		bookmarks, err := dl.api.GetAllBookmarkes(ofapi.BookmarkMedia(allEmptryOrMediaType))
+		bookmarks, err := ie.api.GetAllBookmarkes(ofapi.BookmarkMedia(allEmptryOrMediaType))
 		if err != nil {
 			return nil, err
 		}
-		return dl.collecMutilMedias("bookmarks."+allEmptryOrMediaType, bookmarks)
+		return ie.collecMutilMedias("bookmarks"+titleSeparator+allEmptryOrMediaType, bookmarks)
 	}
-	bookmarks, err := dl.api.GetBookmark(allEmptryOrID, ofapi.BookmarkMedia(allEmptryOrMediaType))
+	bookmarks, err := ie.api.GetBookmark(allEmptryOrID, ofapi.BookmarkMedia(allEmptryOrMediaType))
 	if err != nil {
 		return nil, err
 	}
-	return dl.collecMutilMedias("bookmark."+allEmptryOrMediaType, bookmarks)
+	return ie.collecMutilMedias("bookmark"+titleSeparator+allEmptryOrMediaType, bookmarks)
 }
 
-func (dl *OFDl) extractCollectionsList(allEmptryOrID string) ([]MediaInfo, error) {
+func (ie *OFIE) extractCollectionsList(allEmptryOrID string) ([]MediaInfo, error) {
 	if allEmptryOrID == "" {
-		return dl.extractUser("", "")
+		return ie.extractUser("", "")
 	} else {
-		userList, err := dl.api.GetCollectionsListUsers(allEmptryOrID)
+		userList, err := ie.api.GetCollectionsListUsers(allEmptryOrID)
 		if err != nil {
 			return nil, err
 		}
@@ -365,7 +324,7 @@ func (dl *OFDl) extractCollectionsList(allEmptryOrID string) ([]MediaInfo, error
 				hintTitle: user.Username,
 			})
 		}
-		return dl.extractUsersByIdentifier(users, "")
+		return ie.extractUsersByIdentifier(users, "")
 	}
 }
 
@@ -374,7 +333,7 @@ type extractIdentifier struct {
 	hintTitle string
 }
 
-func (dl *OFDl) extractUsersByIdentifier(users []extractIdentifier, allEmptryOrMediaType string) ([]MediaInfo, error) {
+func (ie *OFIE) extractUsersByIdentifier(users []extractIdentifier, allEmptryOrMediaType string) ([]MediaInfo, error) {
 	funs := []extractFunc{}
 	for _, user := range users {
 		funs = append(funs, func() (string, []model.Post, error) {
@@ -382,32 +341,32 @@ func (dl *OFDl) extractUsersByIdentifier(users []extractIdentifier, allEmptryOrM
 			if e != nil {
 				return "", nil, e
 			}
-			posts, e := dl.api.GetUserMedias(userID, ofapi.UserMedias(allEmptryOrMediaType))
+			posts, e := ie.api.GetUserMedias(userID, ofapi.UserMedias(allEmptryOrMediaType))
 			return user.hintTitle, posts, e
 		})
 	}
-	return dl.parallelExtractFunc(funs)
+	return ie.parallelExtractFunc(funs)
 }
 
-func (dl *OFDl) extractChat(allEmptryOrID string) ([]MediaInfo, error) {
+func (ie *OFIE) extractChat(allEmptryOrID string) ([]MediaInfo, error) {
 	if allEmptryOrID == "" {
-		return dl.extractUser("", "")
+		return ie.extractUser("", "")
 	} else {
 		chatID, err := toInt64(allEmptryOrID)
 		if err != nil {
 			return nil, err
 		}
-		posts, err := dl.api.GetChatMessages(chatID)
+		posts, err := ie.api.GetChatMessages(chatID)
 		if err != nil {
 			return nil, err
 		}
-		return dl.collecMutilMedias("", posts)
+		return ie.collecMutilMedias("", posts)
 	}
 }
 
 type extractFunc func() (hintTitle string, posts []model.Post, error error)
 
-func (dl *OFDl) parallelExtractFunc(funs []extractFunc) ([]MediaInfo, error) {
+func (ie *OFIE) parallelExtractFunc(funs []extractFunc) ([]MediaInfo, error) {
 	ch := make(chan struct{}, 5)
 	results := []MediaInfo{}
 	var firstErr error
@@ -427,7 +386,7 @@ func (dl *OFDl) parallelExtractFunc(funs []extractFunc) ([]MediaInfo, error) {
 
 			var medias []MediaInfo
 			if err == nil {
-				medias, err = dl.collecMutilMedias(hintTitle, posts)
+				medias, err = ie.collecMutilMedias(hintTitle, posts)
 			}
 			if err != nil {
 				if firstErr == nil {
@@ -445,14 +404,14 @@ func (dl *OFDl) parallelExtractFunc(funs []extractFunc) ([]MediaInfo, error) {
 	return results, firstErr
 }
 
-func (dl *OFDl) collecMutilMedias(hintTitle string, posts []model.Post) ([]MediaInfo, error) {
+func (ie *OFIE) collecMutilMedias(hintTitle string, posts []model.Post) ([]MediaInfo, error) {
 	if len(posts) == 0 {
 		return nil, fmt.Errorf("posts is empty")
 	}
 
 	results := []MediaInfo{}
 	for _, post := range posts {
-		medias, e := dl.collectMedias(hintTitle, post)
+		medias, e := ie.collectMedias(hintTitle, post)
 		if e == nil {
 			results = append(results, medias...)
 		}
@@ -467,11 +426,11 @@ func (dl *OFDl) collecMutilMedias(hintTitle string, posts []model.Post) ([]Media
 	return results, nil
 }
 
-func (dl *OFDl) collectMedias(hintTitle string, post model.Post) ([]MediaInfo, error) {
+func (ie *OFIE) collectMedias(hintTitle string, post model.Post) ([]MediaInfo, error) {
 	if len(post.Media) == 0 {
 		return nil, fmt.Errorf("no media found")
 	}
-	hintTitle = strings.Trim(hintTitle, ".")
+	hintTitle = strings.Trim(hintTitle, titleSeparator)
 
 	mediaSet := make(map[int64]MediaInfo)
 	for i, media := range post.Media {
@@ -486,7 +445,7 @@ func (dl *OFDl) collectMedias(hintTitle string, post model.Post) ([]MediaInfo, e
 			MediaID: media.ID,
 			Type:    media.Type,
 			Time:    times(media.CreatedAt, post.CreatedAt, post.PostedAt),
-			Title:   strings.TrimLeft(fmt.Sprintf("%s.%d.%d", hintTitle, post.ID, i), "."),
+			Title:   strings.TrimLeft(fmt.Sprintf("%s%s%d%s%d", hintTitle, titleSeparator, post.ID, titleSeparator, i), titleSeparator),
 		}
 
 		if media.Files.Drm == nil {
@@ -519,52 +478,36 @@ func (dl *OFDl) collectMedias(hintTitle string, post model.Post) ([]MediaInfo, e
 	return results, nil
 }
 
-func (dl *OFDl) checkDependentTools() error {
-	addExe := func(path *string) {
-		//is windows
-		if strings.EqualFold(runtime.GOOS, "windows") {
-			if !strings.HasSuffix(*path, ".exe") {
-				*path = *path + ".exe"
-			}
-		} else {
-			if strings.HasSuffix(*path, ".exe") {
-				*path = strings.TrimSuffix(*path, ".exe")
-			}
-		}
-	}
-	addExe(&dl.dependentTools.YtDlpPath)
-	addExe(&dl.dependentTools.FFMpegPath)
-	addExe(&dl.dependentTools.Mp4Decrypt)
-
-	if !fileutil.IsExist(dl.dependentTools.YtDlpPath) {
-		return fmt.Errorf("ytdlp not found")
-	}
-	if !fileutil.IsExist(dl.dependentTools.FFMpegPath) {
-		return fmt.Errorf("ffmpeg not found")
-	}
-	if !fileutil.IsExist(dl.dependentTools.Mp4Decrypt) {
-		return fmt.Errorf("mp4decrypt not found")
-	}
-	return nil
-}
-
-func (dl *OFDl) cacheMarshal(storage, key string, v any) error {
+func (ie *OFIE) cacheMarshal(storage, key string, v any) error {
 	keymd5 := fmt.Sprintf("%x", md5.Sum([]byte(key)))
-	cachePath := path.Join(dl.cacheDir, storage, keymd5)
+	cachePath := path.Join(ie.cacheDir, storage, keymd5)
 	return common.FileMarshal(cachePath, v)
 }
 
-func (dl *OFDl) cacheDelete(storage, key string) {
+func (ie *OFIE) cacheDelete(storage, key string) {
 	keymd5 := fmt.Sprintf("%x", md5.Sum([]byte(key)))
-	cachePath := path.Join(dl.cacheDir, storage, keymd5)
+	cachePath := path.Join(ie.cacheDir, storage, keymd5)
 	os.Remove(cachePath)
 }
 
-func (dl *OFDl) cacheUnmarshal(storage, key string, pv any) bool {
+func (ie *OFIE) cacheUnmarshal(storage, key string, pv any) bool {
 	keymd5 := fmt.Sprintf("%x", md5.Sum([]byte(key)))
-	cachePath := path.Join(dl.cacheDir, storage, keymd5)
+	cachePath := path.Join(ie.cacheDir, storage, keymd5)
 	if !fileutil.IsExist(cachePath) {
 		return false
 	}
 	return common.FileUnmarshal(cachePath, pv) == nil
 }
+
+func (ie *OFIE) convertApiError(err error) error {
+	if err == nil {
+		return nil
+	}
+	e := ie.api.CheckAuth()
+	if e != nil {
+		return fmt.Errorf("try to Sign in again : %w", e)
+	}
+	return err
+}
+
+const titleSeparator = "_"

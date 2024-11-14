@@ -3,8 +3,10 @@ package ofapi
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/duke-git/lancet/v2/maputil"
@@ -15,47 +17,74 @@ import (
 
 type OFAPI struct {
 	req *Req
+
+	lock sync.Mutex
 }
 
-type Config struct {
-	AuthInfo         AuthInfo
-	OptionalRulesURI []string
-	RulesCacheDir    string
-	CachePriority    bool
+type OFAuthConfig struct {
+	AuthInfo           AuthInfo
+	OptionalRulesURI   []string
+	RulesCacheDir      string
+	RulesCachePriority bool
 }
 
-func NewOFAPI(config Config) (*OFAPI, error) {
-	if config.AuthInfo.Cookie == "" || config.AuthInfo.X_BC == "" || config.AuthInfo.UserAgent == "" {
-		auth, err := LoadAuthInfo(config.RulesCacheDir)
+func NewOFAPI(config ...OFAuthConfig) *OFAPI {
+	api := &OFAPI{
+		req: &Req{},
+	}
+	if len(config) != 0 {
+		err := api.Auth(config[0])
 		if err != nil {
-			return nil, errors.New("AuthInfo is invalid")
+			log.Println("auth failed:", err)
 		}
-		config.AuthInfo = auth
-	} else {
-		cacheAuthInfo(config.RulesCacheDir, config.AuthInfo)
 	}
-	if config.AuthInfo.Cookie == "" || config.AuthInfo.X_BC == "" || config.AuthInfo.UserAgent == "" {
-		return nil, errors.New("AuthInfo is invalid")
-	}
-
-	rules, err := LoadRules(config.RulesCacheDir, config.OptionalRulesURI, config.CachePriority)
-	if err != nil {
-		return nil, err
-	}
-
-	return &OFAPI{
-		req: &Req{
-			authInfo: config.AuthInfo,
-			rules:    rules,
-		},
-	}, nil
+	return api
 }
 
 func (c *OFAPI) Req() *Req {
 	return c.req
 }
 
+func (c *OFAPI) IsAuthed() bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.req.authInfo.Cookie != "" &&
+		c.req.authInfo.X_BC != "" &&
+		c.req.authInfo.UserAgent != "" &&
+		c.req.rules.AppToken != ""
+}
+
+func (c *OFAPI) Auth(config OFAuthConfig) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if config.AuthInfo.Cookie == "" || config.AuthInfo.X_BC == "" || config.AuthInfo.UserAgent == "" {
+		auth, err := LoadAuthInfo(config.RulesCacheDir)
+		if err != nil {
+			return errors.New("AuthInfo is invalid")
+		}
+		config.AuthInfo = auth
+	} else {
+		cacheAuthInfo(config.RulesCacheDir, config.AuthInfo)
+	}
+	if config.AuthInfo.Cookie == "" || config.AuthInfo.X_BC == "" || config.AuthInfo.UserAgent == "" {
+		return errors.New("AuthInfo is invalid")
+	}
+
+	rules, err := LoadRules(config.RulesCacheDir, config.OptionalRulesURI, config.RulesCachePriority)
+	if err != nil {
+		return err
+	}
+	c.req.authInfo = config.AuthInfo
+	c.req.rules = rules
+	return nil
+}
+
 func (c *OFAPI) CheckAuth() error {
+	if !c.IsAuthed() {
+		return errors.New("not authed")
+	}
+
 	me, err := c.GetMe()
 	if err != nil {
 		return err

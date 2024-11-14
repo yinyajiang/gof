@@ -19,6 +19,6 @@ type DRMWVDOption struct {
 	ClientIDURI         string // wvd client id uri
 	ClientPrivateKeyURI string // wvd private key uri
 
-	ClientCacheDir string
-	CachePriority  bool
+	ClientCacheDir      string
+	ClientCachePriority bool
 }

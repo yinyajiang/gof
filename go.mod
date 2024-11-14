@@ -5,7 +5,9 @@ go 1.23.0
 require (
 	github.com/antchfx/xmlquery v1.4.2
 	github.com/duke-git/lancet/v2 v2.3.3
+	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/iyear/gowidevine v0.1.1
+	golang.org/x/exp v0.0.0-20221208152030-732eee02a75a
 )
 
 require (
@@ -13,7 +15,6 @@ require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/antchfx/xpath v1.3.2 // indirect
 	github.com/chmike/cmac-go v1.1.0 // indirect
-	github.com/gofiber/fiber/v2 v2.52.5 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/uuid v1.5.0 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
@@ -24,7 +25,6 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/exp v0.0.0-20221208152030-732eee02a75a // indirect
 	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.19.0 // indirect

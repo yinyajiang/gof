@@ -32,5 +32,14 @@ func SetProxy(proxyURL string) {
 	proxy = u
 }
 
+func SetEnableTimeInterval(t bool) {
+	isDisableTimeInterval = !t
+}
+
+func IsDisableTimeInterval() bool {
+	return isDisableTimeInterval
+}
+
 var debug bool
 var proxy *url.URL
+var isDisableTimeInterval bool

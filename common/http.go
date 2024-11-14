@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/yinyajiang/gof"
+	"golang.org/x/exp/rand"
 )
 
 func AddHeaders(req *http.Request, addHeaders, setHeaders map[string]string) {
@@ -37,7 +38,22 @@ func HttpClient() *http.Client {
 	}
 }
 
+var lastRequestTime time.Time
+
 func HttpDo(req *http.Request, readAll ...bool) (*http.Response, []byte, error) {
+	if !gof.IsDisableTimeInterval() {
+		now := time.Now()
+		if lastRequestTime.IsZero() {
+			lastRequestTime = now
+		} else {
+			since := now.Sub(lastRequestTime)
+			if since < gof.MaxTimeInterval {
+				time.Sleep(time.Duration(rand.Int63n(int64(gof.MaxTimeInterval - since))))
+			}
+		}
+		lastRequestTime = now
+	}
+
 	resp, err := HttpClient().Do(req)
 	if err != nil {
 		return resp, nil, err

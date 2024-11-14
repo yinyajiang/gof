@@ -1,4 +1,4 @@
-package ofdl
+package ofie
 
 import (
 	"fmt"
@@ -22,6 +22,7 @@ type ExtractResult struct {
 	Medias      []MediaInfo
 	IsSingleURL bool
 	IsFromCache bool
+	Title       string
 }
 
 func (m MediaInfo) PostURL() string {

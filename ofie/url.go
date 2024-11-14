@@ -1,4 +1,4 @@
-package ofdl
+package ofie
 
 import (
 	"regexp"

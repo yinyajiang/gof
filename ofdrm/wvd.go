@@ -116,59 +116,15 @@ func (w *wvdSt) cache(cacheDir string) error {
 }
 
 func (w *wvdSt) composeWVD() []byte {
-	buf := make([]byte, 0)
-
-	type wvdHeader struct {
-		Signature     [3]byte
-		Version       uint8
-		Type          uint8
-		SecurityLevel uint8
-		Flags         byte
-	}
-	header := wvdHeader{
-		Signature:     [3]byte{'W', 'V', 'D'},
-		Version:       2,
-		Type:          0, // 默认值
-		SecurityLevel: 0, // 默认值
-		Flags:         0, // 默认值
-	}
-
-	headerBytes := make([]byte, 7)
-	copy(headerBytes[0:3], header.Signature[:])
-	headerBytes[3] = header.Version
-	headerBytes[4] = header.Type
-	headerBytes[5] = header.SecurityLevel
-	headerBytes[6] = header.Flags
-	buf = append(buf, headerBytes...)
-
-	// 写入 privateKey 长度 (2字节)
-	privateKeyLen := make([]byte, 2)
-	binary.BigEndian.PutUint16(privateKeyLen, uint16(len(w._clientPrivateKeyByte)))
-	buf = append(buf, privateKeyLen...)
-
-	// 写入 privateKey
-	buf = append(buf, w._clientPrivateKeyByte...)
-
-	// 写入 clientID 长度 (2字节)
-	clientIDLen := make([]byte, 2)
-	binary.BigEndian.PutUint16(clientIDLen, uint16(len(w._clientIDByte)))
-	buf = append(buf, clientIDLen...)
-
-	// 写入 clientID
-	buf = append(buf, w._clientIDByte...)
-
-	//check
-	_, err := widevine.NewDevice(
-		widevine.FromWVD(bytes.NewReader(buf)),
-	)
+	wvd, err := ComposeWVD(w._clientIDByte, w._clientPrivateKeyByte)
 	if err != nil {
 		return nil
 	}
-	return buf
+	return wvd
 }
 
 func loadWVD(cfg DRMWVDOption) (wvd *wvdSt, err error) {
-	if cfg.CachePriority {
+	if cfg.ClientCachePriority {
 		wvd, e := newWVDFromCache(cfg.ClientCacheDir)
 		if e == nil {
 			return wvd, nil
@@ -203,4 +159,56 @@ func loadWVD(cfg DRMWVDOption) (wvd *wvdSt, err error) {
 	}
 	save = false
 	return newWVDFromCache(cfg.ClientCacheDir)
+}
+
+func ComposeWVD(clientIDByte, clientPrivateKeyByte []byte) ([]byte, error) {
+	buf := make([]byte, 0)
+
+	type wvdHeader struct {
+		Signature     [3]byte
+		Version       uint8
+		Type          uint8
+		SecurityLevel uint8
+		Flags         byte
+	}
+	header := wvdHeader{
+		Signature:     [3]byte{'W', 'V', 'D'},
+		Version:       2,
+		Type:          0, // 默认值
+		SecurityLevel: 0, // 默认值
+		Flags:         0, // 默认值
+	}
+
+	headerBytes := make([]byte, 7)
+	copy(headerBytes[0:3], header.Signature[:])
+	headerBytes[3] = header.Version
+	headerBytes[4] = header.Type
+	headerBytes[5] = header.SecurityLevel
+	headerBytes[6] = header.Flags
+	buf = append(buf, headerBytes...)
+
+	// 写入 privateKey 长度 (2字节)
+	privateKeyLen := make([]byte, 2)
+	binary.BigEndian.PutUint16(privateKeyLen, uint16(len(clientPrivateKeyByte)))
+	buf = append(buf, privateKeyLen...)
+
+	// 写入 privateKey
+	buf = append(buf, clientPrivateKeyByte...)
+
+	// 写入 clientID 长度 (2字节)
+	clientIDLen := make([]byte, 2)
+	binary.BigEndian.PutUint16(clientIDLen, uint16(len(clientIDByte)))
+	buf = append(buf, clientIDLen...)
+
+	// 写入 clientID
+	buf = append(buf, clientIDByte...)
+
+	//check
+	_, err := widevine.NewDevice(
+		widevine.FromWVD(bytes.NewReader(buf)),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
 }

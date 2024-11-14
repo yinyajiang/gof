@@ -1,4 +1,4 @@
-package ofdl
+package ofie
 
 import (
 	"fmt"
@@ -75,4 +75,11 @@ func times(times ...time.Time) time.Time {
 func toInt64(id any) (int64, error) {
 	str := fmt.Sprint(id)
 	return strconv.ParseInt(str, 10, 64)
+}
+
+func collectTitle(result *ExtractResult) {
+	if result == nil || len(result.Medias) == 0 || result.Title != "" {
+		return
+	}
+	result.Title = strings.Split(result.Medias[0].Title, titleSeparator)[0]
 }

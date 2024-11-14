@@ -1,4 +1,4 @@
-package ofdl
+package ofie
 
 import (
 	"encoding/json"
@@ -10,13 +10,13 @@ import (
 )
 
 type ofFiberRoute struct {
-	dl     *OFDl
+	ie     *OFIE
 	router fiber.Router
 }
 
-func addOFDlFiberRoutes(dl *OFDl, router fiber.Router) {
+func addOFIEFiberRoutes(ie *OFIE, router fiber.Router) {
 	r := &ofFiberRoute{
-		dl:     dl,
+		ie:     ie,
 		router: router,
 	}
 	r.registerRoutes()
@@ -38,36 +38,48 @@ func (r *ofFiberRoute) registerRoutes() {
 
 func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
 	var req struct {
-		URL          string `json:"url"`
-		DisableCache bool   `json:"disable_cache"`
+		URL          string
+		DisableCache bool
+		MediaFilter  []string //video, audio, photo, drm-video, drm-photo, drm-audio, non-drm-video, non-drm-photo, non-drm-audio
 	}
 	err := r.bodyUnmarshal(c, &req)
 	if err != nil {
 		return r.statusError(c, err)
 	}
-	result, err := r.dl.ExtractMedias(req.URL, req.DisableCache)
+	result, err := r.ie.ExtractMedias(req.URL, req.DisableCache)
 	if err != nil {
 		return r.statusError(c, err)
 	}
 
-	//drm video, drm photo, normal video
-	drmVideo := MediaInfo{}
-	drmPhoto := MediaInfo{}
-	normalVideo := MediaInfo{}
-	for _, m := range result.Medias {
-		if m.IsDrm {
-			if strings.EqualFold(m.Type, "video") && drmVideo.Type == "" {
-				drmVideo = m
-			} else if (strings.EqualFold(m.Type, "photo") || strings.EqualFold(m.Type, "gif")) && drmPhoto.Type == "" {
-				drmPhoto = m
+	if len(req.MediaFilter) > 0 {
+		filter := map[string]struct{}{}
+		for _, t := range req.MediaFilter {
+			if strings.EqualFold(t, "video") {
+				filter["drm-video"] = struct{}{}
+				filter["non-drm-video"] = struct{}{}
+			} else if strings.EqualFold(t, "photo") {
+				filter["drm-photo"] = struct{}{}
+				filter["non-drm-photo"] = struct{}{}
+				filter["drm-gif"] = struct{}{}
+				filter["non-drm-gif"] = struct{}{}
+			} else if strings.EqualFold(t, "audio") {
+				filter["drm-audio"] = struct{}{}
+				filter["non-drm-audio"] = struct{}{}
+			} else {
+				filter[strings.ToLower(t)] = struct{}{}
 			}
-		} else if strings.EqualFold(m.Type, "video") && normalVideo.Type == "" {
-			normalVideo = m
 		}
+		result.Medias = slice.Filter(result.Medias, func(_ int, m MediaInfo) bool {
+			ty := ""
+			if m.IsDrm {
+				ty = "drm-" + strings.ToLower(m.Type)
+			} else {
+				ty = "non-drm-" + strings.ToLower(m.Type)
+			}
+			_, ok := filter[ty]
+			return ok
+		})
 	}
-	result.Medias = slice.Filter([]MediaInfo{drmVideo, drmPhoto, normalVideo}, func(_ int, m MediaInfo) bool {
-		return m.Type != ""
-	})
 
 	return r.statusSuccess(c, fiber.Map{
 		"ExtractResult": result,
@@ -77,13 +89,13 @@ func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
 
 func (r *ofFiberRoute) fileinfo(c *fiber.Ctx) error {
 	var req struct {
-		MediaURI string `json:"media_uri"`
+		MediaURI string
 	}
 	err := r.bodyUnmarshal(c, &req)
 	if err != nil {
 		return r.statusError(c, err)
 	}
-	info, err := r.dl.FetchFileInfo(req.MediaURI)
+	info, err := r.ie.FetchFileInfo(req.MediaURI)
 	if err != nil {
 		return r.statusError(c, err)
 	}
@@ -92,14 +104,14 @@ func (r *ofFiberRoute) fileinfo(c *fiber.Ctx) error {
 
 func (r *ofFiberRoute) drmSecrets(c *fiber.Ctx) error {
 	var req struct {
-		MediaURI     string `json:"media_uri"`
-		DisableCache bool   `json:"disable_cache"`
+		MediaURI     string
+		DisableCache bool
 	}
 	err := r.bodyUnmarshal(c, &req)
 	if err != nil {
 		return r.statusError(c, err)
 	}
-	secrets, err := r.dl.FetchDRMSecrets(req.MediaURI, req.DisableCache)
+	secrets, err := r.ie.FetchDRMSecrets(req.MediaURI, req.DisableCache)
 	if err != nil {
 		return r.statusError(c, err)
 	}
@@ -107,7 +119,7 @@ func (r *ofFiberRoute) drmSecrets(c *fiber.Ctx) error {
 }
 
 func (r *ofFiberRoute) nonDrmSecrets(c *fiber.Ctx) error {
-	secrets, err := r.dl.GetNonDRMSecrets()
+	secrets, err := r.ie.GetNonDRMSecrets()
 	if err != nil {
 		return r.statusError(c, err)
 	}
