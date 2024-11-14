@@ -1,6 +1,6 @@
 module github.com/yinyajiang/gof
 
-go 1.23.0
+go 1.20
 
 require (
 	github.com/antchfx/xmlquery v1.4.2
