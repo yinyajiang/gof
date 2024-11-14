@@ -29,12 +29,14 @@ type Config struct {
 	OFDRMConfig  ofdrm.OFDRMConfig
 	CacheDir     string
 	Debug        bool
+	CacheSeconds int
 }
 
 type OFIE struct {
-	api      *ofapi.OFAPI
-	drmapi   *ofdrm.OFDRM
-	cacheDir string
+	api          *ofapi.OFAPI
+	drmapi       *ofdrm.OFDRM
+	cacheDir     string
+	cacheSeconds int
 }
 
 func NewOFIE(config Config) (*OFIE, error) {
@@ -53,9 +55,10 @@ func NewOFIE(config Config) (*OFIE, error) {
 		return nil, err
 	}
 	ie := &OFIE{
-		api:      api,
-		drmapi:   drmapi,
-		cacheDir: path.Join(config.CacheDir, "of_ies"),
+		api:          api,
+		drmapi:       drmapi,
+		cacheDir:     path.Join(config.CacheDir, "of_ies"),
+		cacheSeconds: config.CacheSeconds,
 	}
 	return ie, nil
 }
@@ -121,7 +124,7 @@ func (ie *OFIE) ExtractMedias(url string, disableCache_ ...bool) (ret ExtractRes
 		Title       string
 	}
 	cached := cachedMediaInfo{}
-	if !disableCache && ie.cacheUnmarshal("medias", url, &cached) && cached.Time.After(time.Now().Add(-time.Hour*24)) {
+	if !disableCache && ie.cacheUnmarshal("medias", url, &cached) && (ie.cacheSeconds < 0 || cached.Time.After(time.Now().Add(-time.Duration(ie.cacheSeconds)*time.Second))) {
 		return ExtractResult{
 			Medias:      cached.Medias,
 			IsSingleURL: cached.IsSingleURL,
