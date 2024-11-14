@@ -23,17 +23,17 @@ func addOFIEFiberRoutes(ie *OFIE, router fiber.Router) {
 }
 
 func (r *ofFiberRoute) registerRoutes() {
-	r.router.Get("/extract", r.extract)
-	r.router.Post("/extract", r.extract)
+	r.router.Get("/of/extract", r.extract)
+	r.router.Post("/of/extract", r.extract)
 
-	r.router.Get("/fileinfo", r.fileinfo)
-	r.router.Post("/fileinfo", r.fileinfo)
+	r.router.Get("/of/fileinfo", r.fileinfo)
+	r.router.Post("/of/fileinfo", r.fileinfo)
 
-	r.router.Get("/drmsecrets", r.drmSecrets)
-	r.router.Post("/drmsecrets", r.drmSecrets)
+	r.router.Get("/of/drmsecrets", r.drmSecrets)
+	r.router.Post("/of/drmsecrets", r.drmSecrets)
 
-	r.router.Get("/nondrmsecrets", r.nonDrmSecrets)
-	r.router.Post("/nondrmsecrets", r.nonDrmSecrets)
+	r.router.Get("/of/nondrmsecrets", r.nonDrmSecrets)
+	r.router.Post("/of/nondrmsecrets", r.nonDrmSecrets)
 }
 
 func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
