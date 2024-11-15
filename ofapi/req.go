@@ -19,7 +19,7 @@ import (
 )
 
 type Req struct {
-	authInfo AuthInfo
+	authInfo OFAuthInfo
 	rules    rules
 }
 

@@ -1,13 +1,24 @@
 package ofie
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gofiber/fiber/v2"
 	"github.com/yinyajiang/gof"
+	"github.com/yinyajiang/gof/ofapi"
 )
+
+const AUTH_PATH = "/of/auth"
+const EXTRACT_PATH = "/of/extract"
+const FILEINFO_PATH = "/of/fileinfo"
+const DRM_SECRETS_PATH = "/of/drmsecrets"
+const NON_DRM_SECRETS_PATH = "/of/nondrmsecrets"
 
 type ofFiberRoute struct {
 	ie     *OFIE
@@ -23,17 +34,20 @@ func addOFIEFiberRoutes(ie *OFIE, router fiber.Router) {
 }
 
 func (r *ofFiberRoute) registerRoutes() {
-	r.router.Get("/of/extract", r.extract)
-	r.router.Post("/of/extract", r.extract)
+	r.router.Get(EXTRACT_PATH, r.extract)
+	r.router.Post(EXTRACT_PATH, r.extract)
 
-	r.router.Get("/of/fileinfo", r.fileinfo)
-	r.router.Post("/of/fileinfo", r.fileinfo)
+	r.router.Get(FILEINFO_PATH, r.fileinfo)
+	r.router.Post(FILEINFO_PATH, r.fileinfo)
 
-	r.router.Get("/of/drmsecrets", r.drmSecrets)
-	r.router.Post("/of/drmsecrets", r.drmSecrets)
+	r.router.Get(DRM_SECRETS_PATH, r.drmSecrets)
+	r.router.Post(DRM_SECRETS_PATH, r.drmSecrets)
 
-	r.router.Get("/of/nondrmsecrets", r.nonDrmSecrets)
-	r.router.Post("/of/nondrmsecrets", r.nonDrmSecrets)
+	r.router.Get(NON_DRM_SECRETS_PATH, r.nonDrmSecrets)
+	r.router.Post(NON_DRM_SECRETS_PATH, r.nonDrmSecrets)
+
+	r.router.Get(AUTH_PATH, r.auth)
+	r.router.Post(AUTH_PATH, r.auth)
 }
 
 func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
@@ -131,6 +145,19 @@ func (r *ofFiberRoute) nonDrmSecrets(c *fiber.Ctx) error {
 	return r.statusSuccess(c, secrets)
 }
 
+func (r *ofFiberRoute) auth(c *fiber.Ctx) error {
+	var req ofapi.OFAuthInfo
+	err := r.bodyUnmarshal(c, &req)
+	if err != nil {
+		return r.statusError(c, err)
+	}
+	err = r.ie.api.Auth(req)
+	if err != nil {
+		return r.statusError(c, err)
+	}
+	return r.statusSuccess(c, nil)
+}
+
 func (r *ofFiberRoute) bodyUnmarshal(c *fiber.Ctx, p any) error {
 	body := c.Body()
 	return json.Unmarshal(body, p)
@@ -141,5 +168,42 @@ func (r *ofFiberRoute) statusError(c *fiber.Ctx, err error) error {
 }
 
 func (r *ofFiberRoute) statusSuccess(c *fiber.Ctx, p any) error {
+	if p == nil {
+		return c.Status(fiber.StatusOK).SendString("success")
+	}
 	return c.Status(fiber.StatusOK).JSON(p)
+}
+
+//utils
+
+type OFClientHelper struct {
+	ServerAddr string
+}
+
+func (h *OFClientHelper) Auth(authInfo ofapi.OFAuthInfo) error {
+	by, err := h.post(authInfo)
+	if err != nil {
+		return err
+	}
+	if strings.Contains(string(by), "error") {
+		return errors.New(string(by))
+	}
+	return nil
+}
+
+func (h *OFClientHelper) post(p any) ([]byte, error) {
+	body, err := json.Marshal(p)
+	if err != nil {
+		return nil, err
+	}
+	if h.ServerAddr == "" {
+		return nil, errors.New("serverAddr is empty")
+	}
+	serverAddr := strings.TrimSuffix(h.ServerAddr, "/")
+	resp, err := http.Post(serverAddr+AUTH_PATH, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
 }

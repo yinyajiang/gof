@@ -109,7 +109,7 @@ func (c *OFDRM) GetDecryptedKeyByServer(drm DRMInfo) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	maxAttempts := 30
+	maxAttempts := 30 * len(serverURLs)
 	for i := 0; i < maxAttempts; i++ {
 		serverURL := serverURLs[i%len(serverURLs)]
 		decryptedKey, err := c.getVideoDecryptedKeyByServer(serverURL, pssh, drm)

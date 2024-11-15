@@ -63,3 +63,34 @@ func WriteFile(file string, data []byte) error {
 	fileutil.CreateDir(filepath.Dir(file))
 	return os.WriteFile(file, data, 0644)
 }
+
+func ForeachCookie(cookie string, cb func(key, value string) bool) {
+	if cookie == "" || cb == nil {
+		return
+	}
+	for _, s := range strings.Split(cookie, ";") {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		kv := strings.SplitN(s, "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+		if !cb(strings.TrimSpace(kv[0]), strings.TrimSpace(kv[1])) {
+			break
+		}
+	}
+}
+
+func FindCookie(cookie string, key string) string {
+	var value string
+	ForeachCookie(cookie, func(k, v string) bool {
+		if strings.EqualFold(k, key) {
+			value = v
+			return false
+		}
+		return true
+	})
+	return value
+}

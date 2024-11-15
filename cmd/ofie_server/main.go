@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/yinyajiang/gof/common"
+	"github.com/yinyajiang/gof/ofapi"
 	"github.com/yinyajiang/gof/ofie"
 )
 
@@ -14,14 +15,23 @@ func main() {
 		addr = os.Args[1]
 	}
 
-	var cfg ofie.Config
+	var cfg struct {
+		ofie.Config
+		OFAuthInfo ofapi.OFAuthInfo
+	}
 	err := common.FileUnmarshal("config.json", &cfg)
 	if err != nil {
 		panic(err)
 	}
-	dl, err := ofie.NewOFIE(cfg)
+	dl, err := ofie.NewOFIE(cfg.Config)
 	if err != nil {
 		panic(err)
+	}
+	if !cfg.OFAuthInfo.IsEmpty() {
+		err = dl.Auth(cfg.OFAuthInfo)
+		if err != nil {
+			panic(err)
+		}
 	}
 	dl.Serve(context.Background(), addr)
 }

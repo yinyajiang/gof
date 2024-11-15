@@ -136,17 +136,17 @@ func selectLatestRules(rulesList []rules) rules {
 	return latestRules
 }
 
-func LoadAuthInfo(cacheDir string) (AuthInfo, error) {
+func LoadAuthInfo(cacheDir string) (OFAuthInfo, error) {
 	data, err := os.ReadFile(filepath.Join(cacheDir, "auth"))
 	if err != nil {
-		return AuthInfo{}, err
+		return OFAuthInfo{}, err
 	}
-	var auth AuthInfo
+	var auth OFAuthInfo
 	err = json.Unmarshal(data, &auth)
 	return auth, err
 }
 
-func cacheAuthInfo(cacheDir string, auth AuthInfo) {
+func cacheAuthInfo(cacheDir string, auth OFAuthInfo) {
 	data, err := json.Marshal(auth)
 	if err != nil {
 		fmt.Printf("marshal auth failed, err: %v\n", err)

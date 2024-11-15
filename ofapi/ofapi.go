@@ -3,7 +3,6 @@ package ofapi
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,26 +17,33 @@ import (
 type OFAPI struct {
 	req *Req
 
-	lock sync.Mutex
+	cacheDir string
+	lock     sync.Mutex
 }
 
-type OFAuthConfig struct {
-	AuthInfo         AuthInfo
+type OFApiConfig struct {
 	OptionalRulesURI []string
-	RulesCacheDir    string
+	ApiCacheDir      string
 }
 
-func NewOFAPI(config ...OFAuthConfig) *OFAPI {
+func NewOFAPI(config OFApiConfig) (*OFAPI, error) {
 	api := &OFAPI{
-		req: &Req{},
+		req:      &Req{},
+		cacheDir: config.ApiCacheDir,
 	}
-	if len(config) != 0 {
-		err := api.Auth(config[0])
-		if err != nil {
-			log.Println("auth failed:", err)
-		}
+
+	rules, err := LoadRules(api.cacheDir, config.OptionalRulesURI)
+	if err != nil {
+		return nil, err
 	}
-	return api
+	api.req.rules = rules
+
+	//try from cache
+	err = api.Auth()
+	if err == nil {
+		fmt.Println("auth from cache")
+	}
+	return api, nil
 }
 
 func (c *OFAPI) Req() *Req {
@@ -45,37 +51,49 @@ func (c *OFAPI) Req() *Req {
 }
 
 func (c *OFAPI) IsAuthed() bool {
-	c.lock.Lock()
-	defer c.lock.Unlock()
 	return c.req.authInfo.Cookie != "" &&
 		c.req.authInfo.X_BC != "" &&
 		c.req.authInfo.UserAgent != "" &&
 		c.req.rules.AppToken != ""
 }
 
-func (c *OFAPI) Auth(config OFAuthConfig) error {
+/*
+user_id:={} || user_agent:={} || x_bc:={} || cookie:={ sess={};auth_id={} }
+*/
+func (c *OFAPI) AuthByString(authInfo string) error {
+	if authInfo == "" {
+		return errors.New("authInfo is empty")
+	}
+	return c.Auth(parseOFAuthInfo(authInfo))
+}
+
+func (c *OFAPI) Auth(authInfo_ ...OFAuthInfo) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if config.AuthInfo.Cookie == "" || config.AuthInfo.X_BC == "" || config.AuthInfo.UserAgent == "" {
-		auth, err := LoadAuthInfo(config.RulesCacheDir)
+	authInfo := OFAuthInfo{}
+	if len(authInfo_) != 0 {
+		authInfo = authInfo_[0]
+	}
+
+	//from cache
+	if authInfo.IsEmpty() {
+		if c.IsAuthed() {
+			return errors.New("AuthInfo is invalid")
+		}
+		auth, err := LoadAuthInfo(c.cacheDir)
 		if err != nil {
 			return errors.New("AuthInfo is invalid")
 		}
-		config.AuthInfo = auth
+		authInfo = auth
 	} else {
-		cacheAuthInfo(config.RulesCacheDir, config.AuthInfo)
+		authInfo = correctAuthInfo(authInfo)
+		cacheAuthInfo(c.cacheDir, authInfo)
 	}
-	if config.AuthInfo.Cookie == "" || config.AuthInfo.X_BC == "" || config.AuthInfo.UserAgent == "" {
+	if authInfo.Cookie == "" || authInfo.X_BC == "" || authInfo.UserAgent == "" {
 		return errors.New("AuthInfo is invalid")
 	}
-
-	rules, err := LoadRules(config.RulesCacheDir, config.OptionalRulesURI)
-	if err != nil {
-		return err
-	}
-	c.req.authInfo = config.AuthInfo
-	c.req.rules = rules
+	c.req.authInfo = authInfo
 	return nil
 }
 

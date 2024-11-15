@@ -25,7 +25,7 @@ import (
 )
 
 type Config struct {
-	OFAuthConfig                           ofapi.OFAuthConfig
+	OFApiConfig                            ofapi.OFApiConfig
 	OFDRMConfig                            ofdrm.OFDRMConfig
 	CacheDir                               string
 	Debug                                  bool
@@ -42,8 +42,8 @@ type OFIE struct {
 }
 
 func NewOFIE(config Config) (*OFIE, error) {
-	if config.OFAuthConfig.RulesCacheDir == "" {
-		config.OFAuthConfig.RulesCacheDir = path.Join(config.CacheDir, "of_apis")
+	if config.OFApiConfig.ApiCacheDir == "" {
+		config.OFApiConfig.ApiCacheDir = path.Join(config.CacheDir, "of_apis")
 	}
 	if config.OFDRMConfig.WVDOption.ClientCacheDir == "" {
 		config.OFDRMConfig.WVDOption.ClientCacheDir = path.Join(config.CacheDir, "of_drms")
@@ -51,7 +51,11 @@ func NewOFIE(config Config) (*OFIE, error) {
 	if config.Debug {
 		gof.SetDebug(true)
 	}
-	api := ofapi.NewOFAPI(config.OFAuthConfig)
+	api, err := ofapi.NewOFAPI(config.OFApiConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	drmapi, err := ofdrm.NewOFDRM(api.Req(), config.OFDRMConfig)
 	if err != nil {
 		return nil, err
@@ -81,6 +85,14 @@ func (ie *OFIE) OFAPI() *ofapi.OFAPI {
 
 func (ie *OFIE) OFDRM() *ofdrm.OFDRM {
 	return ie.drmapi
+}
+
+func (ie *OFIE) Auth(authInfo ofapi.OFAuthInfo) error {
+	return ie.api.Auth(authInfo)
+}
+
+func (ie *OFIE) AuthByString(authInfo string) error {
+	return ie.api.AuthByString(authInfo)
 }
 
 func (ie *OFIE) Serve(ctx context.Context, addr string) {

@@ -83,9 +83,20 @@ type rules struct {
 	Revision         string `json:"revision"`
 }
 
-type AuthInfo struct {
+type OFAuthInfo struct {
 	UserID    string `json:"user_id"`
 	UserAgent string `json:"user_agent"`
 	X_BC      string `json:"x_bc"`
 	Cookie    string `json:"cookie"`
+}
+
+func (authInfo OFAuthInfo) String() string {
+	return authInfoToString(authInfo)
+}
+
+func (authInfo OFAuthInfo) IsEmpty() bool {
+	return authInfo.UserID == "" ||
+		authInfo.UserAgent == "" ||
+		authInfo.X_BC == "" ||
+		authInfo.Cookie == ""
 }
