@@ -25,18 +25,20 @@ import (
 )
 
 type Config struct {
-	OFAuthConfig ofapi.OFAuthConfig
-	OFDRMConfig  ofdrm.OFDRMConfig
-	CacheDir     string
-	Debug        bool
-	CacheSeconds int
+	OFAuthConfig                           ofapi.OFAuthConfig
+	OFDRMConfig                            ofdrm.OFDRMConfig
+	CacheDir                               string
+	Debug                                  bool
+	CacheSeconds                           int
+	PreferMediaTypeWhenExtractAllMediasURL string //video,photo,all
 }
 
 type OFIE struct {
-	api          *ofapi.OFAPI
-	drmapi       *ofdrm.OFDRM
-	cacheDir     string
-	cacheSeconds int
+	api                                    *ofapi.OFAPI
+	drmapi                                 *ofdrm.OFDRM
+	cacheDir                               string
+	cacheSeconds                           int
+	preferMediaTypeWhenExtractAllMediasURL string
 }
 
 func NewOFIE(config Config) (*OFIE, error) {
@@ -54,11 +56,21 @@ func NewOFIE(config Config) (*OFIE, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if strings.Contains(config.PreferMediaTypeWhenExtractAllMediasURL, "video") {
+		config.PreferMediaTypeWhenExtractAllMediasURL = string(ofapi.UserVideos)
+	} else if strings.Contains(config.PreferMediaTypeWhenExtractAllMediasURL, "photo") {
+		config.PreferMediaTypeWhenExtractAllMediasURL = string(ofapi.UserPhotos)
+	} else {
+		config.PreferMediaTypeWhenExtractAllMediasURL = string(ofapi.UserAll)
+	}
+
 	ie := &OFIE{
-		api:          api,
-		drmapi:       drmapi,
-		cacheDir:     path.Join(config.CacheDir, "of_ies"),
-		cacheSeconds: config.CacheSeconds,
+		api:                                    api,
+		drmapi:                                 drmapi,
+		cacheDir:                               path.Join(config.CacheDir, "of_ies"),
+		cacheSeconds:                           config.CacheSeconds,
+		preferMediaTypeWhenExtractAllMediasURL: config.PreferMediaTypeWhenExtractAllMediasURL,
 	}
 	return ie, nil
 }
@@ -106,7 +118,7 @@ func (ie *OFIE) AddFiberRoutes(router fiber.Router) {
 	addOFIEFiberRoutes(ie, router)
 }
 
-func (ie *OFIE) ExtractMedias(url string, disableCache_ ...bool) (ret ExtractResult, err error) {
+func (ie *OFIE) ExtractMedias(url string, option ExtractOption) (ret ExtractResult, err error) {
 	if url == "" {
 		url = gof.OFPostDomain
 	}
@@ -115,8 +127,6 @@ func (ie *OFIE) ExtractMedias(url string, disableCache_ ...bool) (ret ExtractRes
 	}
 	defer collectTitle(&ret)
 
-	disableCache := len(disableCache_) > 0 && disableCache_[0]
-
 	type cachedMediaInfo struct {
 		Medias      []MediaInfo
 		IsSingleURL bool
@@ -124,7 +134,7 @@ func (ie *OFIE) ExtractMedias(url string, disableCache_ ...bool) (ret ExtractRes
 		Title       string
 	}
 	cached := cachedMediaInfo{}
-	if !disableCache && ie.cacheUnmarshal("medias", url, &cached) && (ie.cacheSeconds < 0 || cached.Time.After(time.Now().Add(-time.Duration(ie.cacheSeconds)*time.Second))) {
+	if !option.DisableCache && ie.cacheUnmarshal("medias", url, &cached) && (ie.cacheSeconds < 0 || cached.Time.After(time.Now().Add(-time.Duration(ie.cacheSeconds)*time.Second))) {
 		return ExtractResult{
 			Medias:      cached.Medias,
 			IsSingleURL: cached.IsSingleURL,
@@ -298,6 +308,16 @@ func (ie *OFIE) extractUser(allEmptryOrUserName string, allEmptryOrMediaType str
 }
 
 func (ie *OFIE) extractBookmarks(allEmptryOrID string, allEmptryOrMediaType string) ([]MediaInfo, error) {
+	if allEmptryOrMediaType == "" && ie.preferMediaTypeWhenExtractAllMediasURL != "" {
+		result, err := ie._extractBookmarks(allEmptryOrID, ie.preferMediaTypeWhenExtractAllMediasURL)
+		if err == nil {
+			return result, nil
+		}
+	}
+	return ie._extractBookmarks(allEmptryOrID, allEmptryOrMediaType)
+}
+
+func (ie *OFIE) _extractBookmarks(allEmptryOrID string, allEmptryOrMediaType string) ([]MediaInfo, error) {
 	if allEmptryOrID == "" {
 		bookmarks, err := ie.api.GetAllBookmarkes(ofapi.BookmarkMedia(allEmptryOrMediaType))
 		if err != nil {
@@ -337,6 +357,16 @@ type extractIdentifier struct {
 }
 
 func (ie *OFIE) extractUsersByIdentifier(users []extractIdentifier, allEmptryOrMediaType string) ([]MediaInfo, error) {
+	if allEmptryOrMediaType == "" && ie.preferMediaTypeWhenExtractAllMediasURL != "" {
+		result, err := ie._extractUsersByIdentifier(users, ie.preferMediaTypeWhenExtractAllMediasURL)
+		if err == nil {
+			return result, nil
+		}
+	}
+	return ie._extractUsersByIdentifier(users, allEmptryOrMediaType)
+}
+
+func (ie *OFIE) _extractUsersByIdentifier(users []extractIdentifier, allEmptryOrMediaType string) ([]MediaInfo, error) {
 	funs := []extractFunc{}
 	for _, user := range users {
 		funs = append(funs, func() (string, []model.Post, error) {

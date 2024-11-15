@@ -46,7 +46,9 @@ func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
 	if err != nil {
 		return r.statusError(c, err)
 	}
-	result, err := r.ie.ExtractMedias(req.URL, req.DisableCache)
+	result, err := r.ie.ExtractMedias(req.URL, ExtractOption{
+		DisableCache: req.DisableCache,
+	})
 	if err != nil {
 		return r.statusError(c, err)
 	}
@@ -69,7 +71,7 @@ func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
 				filter[strings.ToLower(t)] = struct{}{}
 			}
 		}
-		result.Medias = slice.Filter(result.Medias, func(_ int, m MediaInfo) bool {
+		filtered := slice.Filter(result.Medias, func(_ int, m MediaInfo) bool {
 			ty := ""
 			if m.IsDrm {
 				ty = "drm-" + strings.ToLower(m.Type)
@@ -79,6 +81,9 @@ func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
 			_, ok := filter[ty]
 			return ok
 		})
+		if len(filtered) != 0 {
+			result.Medias = filtered
+		}
 	}
 
 	return r.statusSuccess(c, fiber.Map{
