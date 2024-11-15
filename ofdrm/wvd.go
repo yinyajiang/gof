@@ -131,13 +131,6 @@ func (w *wvdSt) composeWVD() []byte {
 }
 
 func loadWVD(cfg DRMWVDOption) (wvd *wvdSt, err error) {
-	if cfg.ClientCachePriority {
-		wvd, e := newWVDFromCache(cfg.ClientCacheDir)
-		if e == nil {
-			return wvd, nil
-		}
-	}
-
 	save := true
 	defer func() {
 		if save {

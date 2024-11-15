@@ -22,10 +22,9 @@ type OFAPI struct {
 }
 
 type OFAuthConfig struct {
-	AuthInfo           AuthInfo
-	OptionalRulesURI   []string
-	RulesCacheDir      string
-	RulesCachePriority bool
+	AuthInfo         AuthInfo
+	OptionalRulesURI []string
+	RulesCacheDir    string
 }
 
 func NewOFAPI(config ...OFAuthConfig) *OFAPI {
@@ -71,7 +70,7 @@ func (c *OFAPI) Auth(config OFAuthConfig) error {
 		return errors.New("AuthInfo is invalid")
 	}
 
-	rules, err := LoadRules(config.RulesCacheDir, config.OptionalRulesURI, config.RulesCachePriority)
+	rules, err := LoadRules(config.RulesCacheDir, config.OptionalRulesURI)
 	if err != nil {
 		return err
 	}
