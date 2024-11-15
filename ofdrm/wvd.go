@@ -12,6 +12,7 @@ import (
 	"github.com/duke-git/lancet/v2/fileutil"
 	widevine "github.com/iyear/gowidevine"
 	"github.com/yinyajiang/gof/common"
+	"golang.org/x/exp/rand"
 )
 
 type wvdSt struct {
@@ -33,18 +34,24 @@ func newWVDFromWVD(wvd []byte) *wvdSt {
 	}
 }
 
-func newWVDFromURI(wvdURI string) (*wvdSt, error) {
-	if wvdURI == "" {
+func newWVDFromURI(wvdURI_ string) (*wvdSt, error) {
+	if wvdURI_ == "" {
 		return nil, errors.New("wvdURI cannot be empty")
 	}
-	var wvd []byte
-	if wvdURI != "" {
-		if !strings.HasPrefix(wvdURI, "http") && fileutil.IsExist(wvdURI) {
-			wvd, _ = os.ReadFile(wvdURI)
-		} else {
-			wvd, _ = common.HttpGet(wvdURI)
-		}
+	wvdURIArray := strings.Split(wvdURI_, ",")
+	wvdURI := wvdURIArray[0]
+	if len(wvdURIArray) > 1 {
+		wvdURI = wvdURIArray[rand.Intn(len(wvdURIArray))]
 	}
+
+	var wvd []byte
+
+	if !strings.HasPrefix(wvdURI, "http") && fileutil.IsExist(wvdURI) {
+		wvd, _ = os.ReadFile(wvdURI)
+	} else {
+		wvd, _ = common.HttpGet(wvdURI)
+	}
+
 	if len(wvd) == 0 {
 		return nil, errors.New("wvd is empty")
 	}
