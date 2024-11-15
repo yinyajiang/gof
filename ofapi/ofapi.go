@@ -76,6 +76,10 @@ func (c *OFAPI) Auth(authInfo_ ...OFAuthInfo) error {
 		authInfo = authInfo_[0]
 	}
 
+	if c.req.authInfo.String() == authInfo.String() {
+		return nil
+	}
+
 	//from cache
 	if authInfo.IsEmpty() {
 		if c.IsAuthed() {

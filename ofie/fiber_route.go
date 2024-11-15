@@ -146,12 +146,14 @@ func (r *ofFiberRoute) nonDrmSecrets(c *fiber.Ctx) error {
 }
 
 func (r *ofFiberRoute) auth(c *fiber.Ctx) error {
-	var req ofapi.OFAuthInfo
-	err := r.bodyUnmarshal(c, &req)
-	if err != nil {
-		return r.statusError(c, err)
+	body := c.Body()
+	var authInfo ofapi.OFAuthInfo
+	err := json.Unmarshal(body, &authInfo)
+	if err == nil {
+		err = r.ie.api.Auth(authInfo)
+	} else {
+		err = r.ie.api.AuthByString(string(body))
 	}
-	err = r.ie.api.Auth(req)
 	if err != nil {
 		return r.statusError(c, err)
 	}
@@ -180,8 +182,8 @@ type OFClientHelper struct {
 	ServerAddr string
 }
 
-func (h *OFClientHelper) Auth(authInfo ofapi.OFAuthInfo) error {
-	by, err := h.post(authInfo)
+func (h *OFClientHelper) Auth(authInfo any) error {
+	by, err := h.post(AUTH_PATH, authInfo)
 	if err != nil {
 		return err
 	}
@@ -191,16 +193,28 @@ func (h *OFClientHelper) Auth(authInfo ofapi.OFAuthInfo) error {
 	return nil
 }
 
-func (h *OFClientHelper) post(p any) ([]byte, error) {
-	body, err := json.Marshal(p)
-	if err != nil {
-		return nil, err
+func (h *OFClientHelper) post(path string, p any) ([]byte, error) {
+	var body []byte
+	var err error
+	if p != nil {
+		switch p := p.(type) {
+		case string:
+			body = []byte(p)
+		case []byte:
+			body = p
+		default:
+			body, err = json.Marshal(p)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
+
 	if h.ServerAddr == "" {
 		return nil, errors.New("serverAddr is empty")
 	}
 	serverAddr := strings.TrimSuffix(h.ServerAddr, "/")
-	resp, err := http.Post(serverAddr+AUTH_PATH, "application/json", bytes.NewBuffer(body))
+	resp, err := http.Post(serverAddr+path, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
