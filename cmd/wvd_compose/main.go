@@ -9,13 +9,31 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 3 {
+	if len(os.Args) < 2 {
 		fmt.Println("Usage: wvd_compose <client_id> <client_private_key>")
+		fmt.Println("       wvd_compose <client and private file directory>")
 		os.Exit(1)
 	}
+	var clientID string
+	var clientPrivateKey string
+	if len(os.Args) == 3 {
+		clientID = os.Args[1]
+		clientPrivateKey = os.Args[2]
+	} else {
+		files, _ := filepath.Glob(os.Args[1] + "/*id*")
+		if len(files) != 1 {
+			fmt.Println("Not found client id file")
+			os.Exit(1)
+		}
+		clientID = files[0]
+		files, _ = filepath.Glob(os.Args[1] + "/*private*")
+		if len(files) != 1 {
+			fmt.Println("Not found client private key file")
+			os.Exit(1)
+		}
+		clientPrivateKey = files[0]
+	}
 
-	clientID := os.Args[1]
-	clientPrivateKey := os.Args[2]
 	clientIDByte, err := os.ReadFile(clientID)
 	if err != nil {
 		fmt.Println("Error reading client ID file:", err)
