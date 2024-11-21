@@ -212,3 +212,10 @@ func ComposeWVD(clientIDByte, clientPrivateKeyByte []byte) ([]byte, error) {
 	}
 	return buf, nil
 }
+
+func CheckWVD(wvdByte []byte) error {
+	_, err := widevine.NewDevice(
+		widevine.FromWVD(bytes.NewReader(wvdByte)),
+	)
+	return err
+}
