@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/duke-git/lancet/v2/maputil"
@@ -18,7 +17,6 @@ type OFAPI struct {
 	req *Req
 
 	cacheDir string
-	lock     sync.Mutex
 }
 
 type OFApiConfig struct {
@@ -36,7 +34,7 @@ func NewOFAPI(config OFApiConfig) (*OFAPI, error) {
 	if err != nil {
 		return nil, err
 	}
-	api.req.rules = rules
+	api.req.SetRules(rules)
 
 	//try from cache
 	err = api.Auth()
@@ -51,10 +49,12 @@ func (c *OFAPI) Req() *Req {
 }
 
 func (c *OFAPI) IsAuthed() bool {
-	return c.req.authInfo.Cookie != "" &&
-		c.req.authInfo.X_BC != "" &&
-		c.req.authInfo.UserAgent != "" &&
-		c.req.rules.AppToken != ""
+	authInfo := c.req.AuthInfo()
+	rules := c.req.Rules()
+	return authInfo.Cookie != "" &&
+		authInfo.X_BC != "" &&
+		authInfo.UserAgent != "" &&
+		rules.AppToken != ""
 }
 
 /*
@@ -68,15 +68,13 @@ func (c *OFAPI) AuthByString(authInfo string) error {
 }
 
 func (c *OFAPI) Auth(authInfo_ ...OFAuthInfo) error {
-	c.lock.Lock()
-	defer c.lock.Unlock()
 
 	authInfo := OFAuthInfo{}
 	if len(authInfo_) != 0 {
 		authInfo = authInfo_[0]
 	}
 
-	if c.req.authInfo.String() == authInfo.String() {
+	if c.req.AuthInfo().String() == authInfo.String() {
 		return nil
 	}
 
@@ -97,7 +95,7 @@ func (c *OFAPI) Auth(authInfo_ ...OFAuthInfo) error {
 	if authInfo.Cookie == "" || authInfo.X_BC == "" || authInfo.UserAgent == "" {
 		return errors.New("AuthInfo is invalid")
 	}
-	c.req.authInfo = authInfo
+	c.req.SetAuthInfo(authInfo)
 	return nil
 }
 

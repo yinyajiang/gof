@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/duke-git/lancet/v2/maputil"
@@ -19,12 +20,33 @@ import (
 )
 
 type Req struct {
-	authInfo OFAuthInfo
-	rules    rules
+	_authInfo OFAuthInfo
+	_rules    rules
+	_lock     sync.RWMutex
+}
+
+func (r *Req) AuthInfo() OFAuthInfo {
+	r._lock.RLock()
+	defer r._lock.RUnlock()
+	return r._authInfo
+}
+
+func (r *Req) Rules() rules {
+	return r._rules
+}
+
+func (r *Req) SetRules(rules rules) {
+	r._rules = rules
+}
+
+func (r *Req) SetAuthInfo(authInfo OFAuthInfo) {
+	r._lock.Lock()
+	defer r._lock.Unlock()
+	r._authInfo = authInfo
 }
 
 func (r *Req) UserAgent() string {
-	return r.authInfo.UserAgent
+	return r.AuthInfo().UserAgent
 }
 
 func (r *Req) Post(urlpath string, params any, body []byte) (data []byte, err error) {
@@ -93,7 +115,7 @@ func (r *Req) buildUARequest(method, urlpath string, params any, body_ ...[]byte
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", r.authInfo.UserAgent)
+	req.Header.Set("User-Agent", r.UserAgent())
 	return req, nil
 }
 
@@ -110,16 +132,17 @@ func (r *Req) buildRequest(method string, urlpath *string, params any, body_ ...
 }
 
 func (r *Req) UnsignedHeaders(mergedHeaders map[string]string) map[string]string {
-	cookie := strings.TrimPrefix(r.authInfo.Cookie, ";")
+	authInfo := r.AuthInfo()
+	cookie := strings.TrimPrefix(authInfo.Cookie, ";")
 	if mergedHeaders != nil && mergedHeaders["Cookie"] != "" {
 		cookie = strings.TrimSuffix(cookie, ";") + ";" + strings.TrimPrefix(mergedHeaders["Cookie"], ";")
 		delete(mergedHeaders, "Cookie")
 	}
 
 	merged := maputil.Merge(map[string]string{
-		"User-Agent": r.authInfo.UserAgent,
+		"User-Agent": authInfo.UserAgent,
 		"Accept":     "*/*",
-		"X-BC":       r.authInfo.X_BC,
+		"X-BC":       authInfo.X_BC,
 		"Cookie":     cookie,
 	}, mergedHeaders)
 	if merged["Cookie"] == "" {
@@ -129,23 +152,25 @@ func (r *Req) UnsignedHeaders(mergedHeaders map[string]string) map[string]string
 }
 
 func (r *Req) SignedHeaders(urlpath string) map[string]string {
+	authInfo := r.AuthInfo()
+	rules := r.Rules()
 	urlpath = ApiURLPath(urlpath)
 	timestamp := time.Now().UTC().UnixMilli()
-	hashBytes := sha1.Sum([]byte(strings.Join([]string{r.rules.StaticParam, fmt.Sprintf("%d", timestamp), urlpath, r.authInfo.UserID}, "\n")))
+	hashBytes := sha1.Sum([]byte(strings.Join([]string{rules.StaticParam, fmt.Sprintf("%d", timestamp), urlpath, authInfo.UserID}, "\n")))
 	hashString := strings.ToLower(hex.EncodeToString(hashBytes[:]))
-	checksum := slice.Reduce(r.rules.ChecksumIndexes, func(_ int, number int, accumulator int) int {
+	checksum := slice.Reduce(rules.ChecksumIndexes, func(_ int, number int, accumulator int) int {
 		return accumulator + int(hashString[number])
-	}, 0) + r.rules.ChecksumConstant
-	sign := r.rules.Prefix + ":" + hashString + ":" + strings.ToLower(fmt.Sprintf("%X", checksum)) + ":" + r.rules.Suffix
+	}, 0) + rules.ChecksumConstant
+	sign := rules.Prefix + ":" + hashString + ":" + strings.ToLower(fmt.Sprintf("%X", checksum)) + ":" + rules.Suffix
 	header := map[string]string{
 		"accept":     "application/json, text/plain",
-		"app-token":  r.rules.AppToken,
-		"cookie":     r.authInfo.Cookie,
+		"app-token":  rules.AppToken,
+		"cookie":     authInfo.Cookie,
 		"sign":       sign,
 		"time":       fmt.Sprintf("%d", timestamp),
-		"user-id":    r.authInfo.UserID,
-		"user-agent": r.authInfo.UserAgent,
-		"x-bc":       r.authInfo.X_BC,
+		"user-id":    authInfo.UserID,
+		"user-agent": authInfo.UserAgent,
+		"x-bc":       authInfo.X_BC,
 	}
 	return header
 }

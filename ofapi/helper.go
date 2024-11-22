@@ -77,7 +77,10 @@ func parseOFAuthInfo(authInfo string) OFAuthInfo {
 		case "x_bc":
 			authinfo.X_BC = strings.TrimSpace(kv[1])
 		case "cookie":
-			authinfo.Cookie += ";" + strings.TrimSpace(kv[1])
+			if !strings.HasSuffix(authinfo.Cookie, ";") {
+				authinfo.Cookie += ";"
+			}
+			authinfo.Cookie += strings.TrimSpace(kv[1])
 		}
 	}
 	return correctAuthInfo(authinfo)
@@ -91,7 +94,10 @@ func correctAuthInfo(authInfo OFAuthInfo) OFAuthInfo {
 	if authInfo.UserID == "" {
 		authInfo.UserID = common.FindCookie(authInfo.Cookie, "auth_id")
 	} else {
-		authInfo.Cookie += ";" + "user_id=" + authInfo.UserID
+		if !strings.HasSuffix(authInfo.Cookie, ";") {
+			authInfo.Cookie += ";"
+		}
+		authInfo.Cookie += "user_id=" + authInfo.UserID
 	}
 	authInfo.Cookie = correctCookie(authInfo.Cookie)
 	return authInfo
@@ -114,7 +120,7 @@ func correctCookie(cookie string) string {
 		return true
 	})
 	if sess != "" && auth_id != "" {
-		return sess + ";" + auth_id
+		return fmt.Sprintf("sess=%s;auth_id=%s", sess, auth_id)
 	}
 	return ""
 }
