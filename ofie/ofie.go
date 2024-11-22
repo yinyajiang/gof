@@ -31,6 +31,7 @@ type Config struct {
 	Debug                                  bool
 	CacheSeconds                           int
 	PreferMediaTypeWhenExtractAllMediasURL string //video,photo,all
+	MustFetchDRMSecretsByClient            bool
 }
 
 type OFIE struct {
@@ -39,6 +40,7 @@ type OFIE struct {
 	cacheDir                               string
 	cacheSeconds                           int
 	preferMediaTypeWhenExtractAllMediasURL string
+	mustFetchDRMSecretsByClient            bool
 }
 
 func NewOFIE(config Config) (*OFIE, error) {
@@ -75,6 +77,7 @@ func NewOFIE(config Config) (*OFIE, error) {
 		cacheDir:                               path.Join(config.CacheDir, "of_ies"),
 		cacheSeconds:                           config.CacheSeconds,
 		preferMediaTypeWhenExtractAllMediasURL: config.PreferMediaTypeWhenExtractAllMediasURL,
+		mustFetchDRMSecretsByClient:            config.MustFetchDRMSecretsByClient,
 	}
 	return ie, nil
 }
@@ -129,6 +132,30 @@ func (ie *OFIE) Serve(ctx context.Context, addr string) {
 // video, audio, photo, drm-video, drm-photo, drm-audio, non-drm-video, non-drm-photo, non-drm-audio
 func (ie *OFIE) AddFiberRoutes(router fiber.Router, preferFilter ...string) {
 	addOFIEFiberRoutes(ie, router, preferFilter...)
+}
+
+func (ie *OFIE) Test(url string, disableCache bool) {
+	medis, err := ie.ExtractMedias(url, ExtractOption{
+		DisableCache: disableCache,
+	})
+	if err != nil {
+		panic(err)
+	}
+	for _, media := range medis.Medias {
+		_, err := ie.FetchFileInfo(media.MediaURI)
+		if err != nil {
+			panic(err)
+		}
+		if media.IsDrm {
+			_, err := ie.FetchDRMSecrets(media.MediaURI, FetchDRMSecretsOption{
+				DisableCache: true,
+				MustClient:   true,
+			})
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
 }
 
 func (ie *OFIE) ExtractMedias(url string, option ExtractOption) (ret ExtractResult, err error) {
@@ -237,12 +264,13 @@ func (ie *OFIE) GetNonDRMSecrets() (NonDRMSecrets, error) {
 	}, nil
 }
 
-func (ie *OFIE) FetchDRMSecrets(mediaURI string, disableCache_ ...bool) (ret DRMSecrets, err error) {
+func (ie *OFIE) FetchDRMSecrets(mediaURI string, option FetchDRMSecretsOption) (ret DRMSecrets, err error) {
 	defer func() {
 		if err != nil {
 			err = ie.convertApiError(err)
 		}
 	}()
+	option.MustClient = option.MustClient || ie.mustFetchDRMSecretsByClient
 
 	type cachedSecrets struct {
 		DecryptKey string
@@ -270,14 +298,17 @@ func (ie *OFIE) FetchDRMSecrets(mediaURI string, disableCache_ ...bool) (ret DRM
 		}
 	}
 
-	disableCache := len(disableCache_) > 0 && disableCache_[0]
-
 	var secrets cachedSecrets
-	if !disableCache && ie.cacheUnmarshal("secrets", drminfo.DRM.Manifest.Dash, &secrets) {
+	if !option.DisableCache && ie.cacheUnmarshal("secrets", drminfo.DRM.Manifest.Dash, &secrets) {
 		return drmSecretsFromCacheFun(secrets), nil
 	}
 
-	decript, err := ie.drmapi.GetDecryptedKeyAuto(drminfo)
+	var decript string
+	if option.MustClient {
+		decript, err = ie.drmapi.GetDecryptedKeyByClient(drminfo)
+	} else {
+		decript, err = ie.drmapi.GetDecryptedKeyAuto(drminfo)
+	}
 	if err != nil {
 		return DRMSecrets{}, err
 	}

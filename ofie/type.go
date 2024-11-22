@@ -41,6 +41,11 @@ type DRMSecrets struct {
 	CookiesString string
 }
 
+type FetchDRMSecretsOption struct {
+	DisableCache bool
+	MustClient   bool
+}
+
 type NonDRMSecrets struct {
 	Headers map[string]string
 }

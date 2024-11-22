@@ -89,7 +89,7 @@ func (r *Req) GetFileInfo(u string) (common.HttpFileInfo, error) {
 		err := fmt.Errorf("[warning] url(%s) maybe drm url, use ofdrm.GetFileInfo instead", u)
 		return common.HttpFileInfo{}, err
 	}
-	req, err := r.buildUARequest("GET", u, nil)
+	req, err := r.newHttpRequestWithUA("GET", u, nil)
 	if err != nil {
 		return common.HttpFileInfo{}, err
 	}
@@ -110,8 +110,15 @@ func (r *Req) buildSignedRequest(method, urlpath string, params any, body_ ...[]
 	return req, nil
 }
 
-func (r *Req) buildUARequest(method, urlpath string, params any, body_ ...[]byte) (*http.Request, error) {
-	req, err := r.buildRequest(method, &urlpath, params, body_...)
+func (r *Req) newHttpRequestWithUA(method, url string, body_ ...[]byte) (*http.Request, error) {
+	if !strings.HasPrefix(url, "http") {
+		panic("url must start with http:" + url)
+	}
+	var body io.Reader
+	if len(body_) > 0 {
+		body = io.NopCloser(bytes.NewReader(body_[0]))
+	}
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}

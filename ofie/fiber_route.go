@@ -139,7 +139,9 @@ func (r *ofFiberRoute) drmSecrets(c *fiber.Ctx) error {
 	if err != nil {
 		return r.statusError(c, err)
 	}
-	secrets, err := r.ie.FetchDRMSecrets(req.MediaURI, req.DisableCache)
+	secrets, err := r.ie.FetchDRMSecrets(req.MediaURI, FetchDRMSecretsOption{
+		DisableCache: req.DisableCache,
+	})
 	if err != nil {
 		return r.statusError(c, err)
 	}
