@@ -380,7 +380,8 @@ func (ie *OFIE) extractUsersByIdentifier(users []extractIdentifier, allEmptryOrM
 
 func (ie *OFIE) _extractUsersByIdentifier(users []extractIdentifier, allEmptryOrMediaType string) ([]MediaInfo, error) {
 	funs := []extractFunc{}
-	for _, user := range users {
+	for _, user_ := range users {
+		user := user_
 		funs = append(funs, func() (string, []model.Post, error) {
 			userID, e := toInt64(user.id)
 			if e != nil {
@@ -390,7 +391,7 @@ func (ie *OFIE) _extractUsersByIdentifier(users []extractIdentifier, allEmptryOr
 			return user.hintTitle, posts, e
 		})
 	}
-	return ie.parallelExtractFunc(funs)
+	return ie.parallelExtractFunc(funs, 5)
 }
 
 func (ie *OFIE) extractChat(allEmptryOrID string) ([]MediaInfo, error) {
@@ -411,16 +412,19 @@ func (ie *OFIE) extractChat(allEmptryOrID string) ([]MediaInfo, error) {
 
 type extractFunc func() (hintTitle string, posts []model.Post, error error)
 
-func (ie *OFIE) parallelExtractFunc(funs []extractFunc) ([]MediaInfo, error) {
-	ch := make(chan struct{}, 5)
+func (ie *OFIE) parallelExtractFunc(funs []extractFunc, parallelCount int) ([]MediaInfo, error) {
+	if parallelCount <= 0 {
+		parallelCount = 5
+	}
+	ch := make(chan struct{}, parallelCount)
 	results := []MediaInfo{}
 	var firstErr error
 	var lock sync.Mutex
 	var wg sync.WaitGroup
-	for _, fun := range funs {
+	for _, fun_ := range funs {
 		ch <- struct{}{}
 		wg.Add(1)
-		go func() {
+		go func(fun extractFunc) {
 			defer func() {
 				<-ch
 				wg.Done()
@@ -440,7 +444,7 @@ func (ie *OFIE) parallelExtractFunc(funs []extractFunc) ([]MediaInfo, error) {
 			} else {
 				results = append(results, medias...)
 			}
-		}()
+		}(fun_)
 	}
 	wg.Wait()
 	if len(results) != 0 {
