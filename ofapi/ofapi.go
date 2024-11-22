@@ -37,10 +37,7 @@ func NewOFAPI(config OFApiConfig) (*OFAPI, error) {
 	api.req.SetRules(rules)
 
 	//try from cache
-	err = api.Auth()
-	if err == nil {
-		fmt.Println("auth from cache")
-	}
+	api.Auth()
 	return api, nil
 }
 
