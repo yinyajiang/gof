@@ -126,8 +126,9 @@ func (ie *OFIE) Serve(ctx context.Context, addr string) {
 	}
 }
 
-func (ie *OFIE) AddFiberRoutes(router fiber.Router) {
-	addOFIEFiberRoutes(ie, router)
+// video, audio, photo, drm-video, drm-photo, drm-audio, non-drm-video, non-drm-photo, non-drm-audio
+func (ie *OFIE) AddFiberRoutes(router fiber.Router, preferFilter ...string) {
+	addOFIEFiberRoutes(ie, router, preferFilter...)
 }
 
 func (ie *OFIE) ExtractMedias(url string, option ExtractOption) (ret ExtractResult, err error) {

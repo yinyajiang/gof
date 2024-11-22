@@ -21,14 +21,17 @@ const DRM_SECRETS_PATH = "/of/drmsecrets"
 const NON_DRM_SECRETS_PATH = "/of/nondrmsecrets"
 
 type ofFiberRoute struct {
-	ie     *OFIE
-	router fiber.Router
+	ie           *OFIE
+	router       fiber.Router
+	preferFilter []string
 }
 
-func addOFIEFiberRoutes(ie *OFIE, router fiber.Router) {
+// video, audio, photo, drm-video, drm-photo, drm-audio, non-drm-video, non-drm-photo, non-drm-audio
+func addOFIEFiberRoutes(ie *OFIE, router fiber.Router, preferFilter ...string) {
 	r := &ofFiberRoute{
-		ie:     ie,
-		router: router,
+		ie:           ie,
+		router:       router,
+		preferFilter: preferFilter,
 	}
 	r.registerRoutes()
 }
@@ -67,9 +70,14 @@ func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
 		return r.statusError(c, err)
 	}
 
-	if len(req.MediaFilter) > 0 {
+	filterArr := req.MediaFilter
+	if len(filterArr) == 0 {
+		filterArr = r.preferFilter
+	}
+
+	if len(filterArr) > 0 {
 		filter := map[string]struct{}{}
-		for _, t := range req.MediaFilter {
+		for _, t := range filterArr {
 			if strings.EqualFold(t, "video") {
 				filter["drm-video"] = struct{}{}
 				filter["non-drm-video"] = struct{}{}
@@ -85,7 +93,7 @@ func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
 				filter[strings.ToLower(t)] = struct{}{}
 			}
 		}
-		filtered := slice.Filter(result.Medias, func(_ int, m MediaInfo) bool {
+		filteredMedias := slice.Filter(result.Medias, func(_ int, m MediaInfo) bool {
 			ty := ""
 			if m.IsDrm {
 				ty = "drm-" + strings.ToLower(m.Type)
@@ -95,8 +103,8 @@ func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
 			_, ok := filter[ty]
 			return ok
 		})
-		if len(filtered) != 0 {
-			result.Medias = filtered
+		if len(filteredMedias) != 0 {
+			result.Medias = filteredMedias
 		}
 	}
 
