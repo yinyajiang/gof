@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/duke-git/lancet/v2/fileutil"
+	"github.com/duke-git/lancet/v2/slice"
 	"github.com/yinyajiang/gof"
 )
 
@@ -93,4 +94,10 @@ func FindCookie(cookie string, key string) string {
 		return true
 	})
 	return value
+}
+
+func CleanEmptryString(arr []string) []string {
+	return slice.Filter(arr, func(_ int, s string) bool {
+		return s != ""
+	})
 }

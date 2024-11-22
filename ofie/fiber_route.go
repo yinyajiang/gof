@@ -11,6 +11,7 @@ import (
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gofiber/fiber/v2"
 	"github.com/yinyajiang/gof"
+	"github.com/yinyajiang/gof/common"
 	"github.com/yinyajiang/gof/ofapi"
 )
 
@@ -31,7 +32,7 @@ func addOFIEFiberRoutes(ie *OFIE, router fiber.Router, preferFilter ...string) {
 	r := &ofFiberRoute{
 		ie:           ie,
 		router:       router,
-		preferFilter: preferFilter,
+		preferFilter: common.CleanEmptryString(preferFilter),
 	}
 	r.registerRoutes()
 }
@@ -70,7 +71,7 @@ func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
 		return r.statusError(c, err)
 	}
 
-	filterArr := req.MediaFilter
+	filterArr := common.CleanEmptryString(req.MediaFilter)
 	if len(filterArr) == 0 {
 		filterArr = r.preferFilter
 	}
