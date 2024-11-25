@@ -59,6 +59,7 @@ func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
 		URL          string
 		DisableCache bool
 		MediaFilter  []string //video, audio, photo, drm-video, drm-photo, drm-audio, non-drm-video, non-drm-photo, non-drm-audio
+		CountLimit   int
 	}
 	err := r.bodyUnmarshal(c, &req)
 	if err != nil {
@@ -108,7 +109,9 @@ func (r *ofFiberRoute) extract(c *fiber.Ctx) error {
 			result.Medias = filteredMedias
 		}
 	}
-
+	if req.CountLimit > 0 && len(result.Medias) > req.CountLimit {
+		result.Medias = result.Medias[:req.CountLimit]
+	}
 	return r.statusSuccess(c, fiber.Map{
 		"ExtractResult": result,
 		"Proxy":         gof.ProxyString(),
