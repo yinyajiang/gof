@@ -185,10 +185,13 @@ func (ie *OFIE) ExtractMedias(url string, option ExtractOption) (ret ExtractResu
 
 	defer func() {
 		if err == nil {
+			if ret.Title == "" {
+				ret.Title = strings.Split(ret.Medias[0].Title, titleSeparator)[0]
+			}
 			cached.Medias = ret.Medias
 			cached.IsSingleURL = ret.IsSingleURL
+			cached.Title = ret.Title
 			cached.Time = time.Now()
-			cached.Title = strings.Split(ret.Medias[0].Title, titleSeparator)[0]
 			ie.cacheMarshal("medias", url, cached)
 		} else {
 			ie.cacheDelete("medias", url)
@@ -198,6 +201,7 @@ func (ie *OFIE) ExtractMedias(url string, option ExtractOption) (ret ExtractResu
 
 	if ofurlMatchs(url, reSubscriptions, reHome) {
 		ret.Medias, err = ie.extractUser("", "")
+		ret.Title = "onlyfans"
 		return
 	}
 
@@ -242,6 +246,7 @@ func (ie *OFIE) ExtractMedias(url string, option ExtractOption) (ret ExtractResu
 	}
 
 	ret.Medias, err = ie.extractUser("", "")
+	ret.Title = "onlyfans"
 	return
 }
 
