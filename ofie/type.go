@@ -1,11 +1,7 @@
 package ofie
 
 import (
-	"fmt"
-	"strings"
 	"time"
-
-	"github.com/yinyajiang/gof"
 )
 
 type MediaInfo struct {
@@ -27,10 +23,6 @@ type ExtractResult struct {
 
 type ExtractOption struct {
 	DisableCache bool
-}
-
-func (m MediaInfo) PostURL() string {
-	return fmt.Sprintf("%s/%d/%s", gof.OFPostDomain, m.PostID, strings.Split(m.Title, ".")[0])
 }
 
 type DRMSecrets struct {

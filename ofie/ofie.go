@@ -531,7 +531,7 @@ func (ie *OFIE) collectMedias(hintTitle string, post model.Post) ([]MediaInfo, e
 			MediaID: media.ID,
 			Type:    media.Type,
 			Time:    times(media.CreatedAt, post.CreatedAt, post.PostedAt),
-			Title:   strings.TrimLeft(fmt.Sprintf("%s%s%d%s%d", hintTitle, titleSeparator, post.ID, titleSeparator, i), titleSeparator),
+			Title:   strings.TrimLeft(fmt.Sprintf("%s%s%x%s%x", hintTitle, titleSeparator, post.ID, titleSeparator, i), titleSeparator),
 		}
 
 		if media.Files.Drm == nil {
