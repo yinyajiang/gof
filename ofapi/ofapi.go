@@ -60,25 +60,15 @@ func (c *OFAPI) AuthByString(authInfo string, check ...bool) error {
 	if authInfo == "" {
 		return errors.New("authInfo is empty")
 	}
-	return c.Auth(string2AuthInfo(authInfo), check...)
+	return c.Auth(String2AuthInfo(authInfo), check...)
 }
 
 func (c *OFAPI) AuthByRaw(ua, cookiefile string, check ...bool) error {
-	cookies, err := common.ParseCookieFile(cookiefile)
+	info, err := Raw2AuthInfo(ua, cookiefile)
 	if err != nil {
 		return err
 	}
-	cookiestr := ""
-	for k, v := range cookies {
-		cookiestr += fmt.Sprintf("%s=%s;", k, v)
-	}
-	return c.Auth(
-		OFAuthInfo{
-			Cookie:    cookiestr,
-			UserAgent: ua,
-		},
-		check...,
-	)
+	return c.Auth(info, check...)
 }
 
 func (c *OFAPI) AuthByCache(check ...bool) error {
