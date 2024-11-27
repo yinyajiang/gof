@@ -76,11 +76,12 @@ func (c *OFAPI) AuthByCache(check ...bool) error {
 }
 
 func (c *OFAPI) Auth(authInfo OFAuthInfo, check ...bool) error {
+	authInfo = correctAuthInfo(authInfo)
+
 	if c.req.AuthInfo().String() == authInfo.String() {
 		fmt.Println("authInfo is same, skip")
 		return nil
 	}
-	authInfo = correctAuthInfo(authInfo)
 
 	//from cache
 	if authInfo.IsEmpty() {

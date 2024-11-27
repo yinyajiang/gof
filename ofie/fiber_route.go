@@ -164,9 +164,9 @@ func (r *ofFiberRoute) auth(c *fiber.Ctx) error {
 	var authInfo ofapi.OFAuthInfo
 	err := json.Unmarshal(body, &authInfo)
 	if err == nil {
-		err = r.ie.api.Auth(authInfo)
+		err = r.ie.api.Auth(authInfo, true)
 	} else {
-		err = r.ie.api.AuthByString(string(body))
+		err = r.ie.api.AuthByString(string(body), true)
 	}
 	if err != nil {
 		return r.statusError(c, err)
