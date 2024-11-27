@@ -77,8 +77,10 @@ func (c *OFAPI) AuthByCache(check ...bool) error {
 
 func (c *OFAPI) Auth(authInfo OFAuthInfo, check ...bool) error {
 	if c.req.AuthInfo().String() == authInfo.String() {
+		fmt.Println("authInfo is same, skip")
 		return nil
 	}
+	authInfo = correctAuthInfo(authInfo)
 
 	//from cache
 	if authInfo.IsEmpty() {
@@ -89,19 +91,25 @@ func (c *OFAPI) Auth(authInfo OFAuthInfo, check ...bool) error {
 		if err != nil {
 			return errors.New("AuthInfo is invalid")
 		}
-		authInfo = auth
-	} else {
-		authInfo = correctAuthInfo(authInfo)
-		cacheAuthInfo(c.cacheDir, authInfo)
+		c.req.SetAuthInfo(auth)
+		return nil
 	}
+
 	if authInfo.Cookie == "" || authInfo.X_BC == "" || authInfo.UserAgent == "" {
 		return errors.New("AuthInfo is invalid")
 	}
-	c.req.SetAuthInfo(authInfo)
 
+	old := c.req.AuthInfo()
+	c.req.SetAuthInfo(authInfo)
 	if len(check) != 0 && check[0] {
-		return c.CheckAuth()
+		err := c.CheckAuth()
+		if err != nil {
+			//restore
+			c.req.SetAuthInfo(old)
+			return err
+		}
 	}
+	cacheAuthInfo(c.cacheDir, authInfo)
 	return nil
 }
 
