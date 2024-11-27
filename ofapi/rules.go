@@ -16,14 +16,14 @@ import (
 	"github.com/yinyajiang/gof/common"
 )
 
-func LoadRules(cacheDir string, rulesURL []string) (rules, error) {
+func loadRules(cacheDir string, rulesURL []string) (rules, error) {
 	var allRules []rules
 
-	urlRules, urlErr := loadURLRules(rulesURL)
+	urlRules, urlErr := _loadURLRules(rulesURL)
 	if urlErr == nil {
 		allRules = append(allRules, urlRules)
 	}
-	cachedRules, cachedErr := loadCachedRules(cacheDir)
+	cachedRules, cachedErr := _loadCachedRules(cacheDir)
 	if cachedErr == nil {
 		allRules = append(allRules, cachedRules)
 	}
@@ -31,14 +31,14 @@ func LoadRules(cacheDir string, rulesURL []string) (rules, error) {
 		return rules{}, urlErr
 	}
 
-	latest := selectLatestRules(allRules)
+	latest := _selectLatestRules(allRules)
 	if cachedRules.Revision != latest.Revision {
-		cacheRules(cacheDir, latest)
+		_cacheRules(cacheDir, latest)
 	}
 	return latest, nil
 }
 
-func isValidRules(rules rules) bool {
+func _isValidRules(rules rules) bool {
 	return rules.AppToken != "" &&
 		rules.ChecksumConstant != 0 &&
 		len(rules.ChecksumIndexes) > 0 &&
@@ -47,7 +47,7 @@ func isValidRules(rules rules) bool {
 		rules.Suffix != ""
 }
 
-func cacheRules(cacheDir string, rules rules) {
+func _cacheRules(cacheDir string, rules rules) {
 	data, err := json.Marshal(rules)
 	if err != nil {
 		fmt.Printf("marshal rules failed, err: %v\n", err)
@@ -56,7 +56,7 @@ func cacheRules(cacheDir string, rules rules) {
 	os.WriteFile(filepath.Join(cacheDir, "rules"), data, 0644)
 }
 
-func loadCachedRules(cacheDir string) (rules, error) {
+func _loadCachedRules(cacheDir string) (rules, error) {
 	data, err := os.ReadFile(filepath.Join(cacheDir, "rules"))
 	if err != nil {
 		return rules{}, err
@@ -66,7 +66,7 @@ func loadCachedRules(cacheDir string) (rules, error) {
 	return rules, err
 }
 
-func loadURLRules(rulesURI []string) (rules, error) {
+func _loadURLRules(rulesURI []string) (rules, error) {
 	const fixURL = "https://raw.githubusercontent.com/deviint/onlyfans-dynamic-rules/main/dynamicRules.json"
 
 	if len(rulesURI) == 0 {
@@ -102,17 +102,17 @@ func loadURLRules(rulesURI []string) (rules, error) {
 
 	ruleList := []rules{}
 	for _, item := range pruleList {
-		if item != nil && isValidRules(*item) {
+		if item != nil && _isValidRules(*item) {
 			ruleList = append(ruleList, *item)
 		}
 	}
 	if len(ruleList) == 0 {
 		return rules{}, errors.New("no url valid rules")
 	}
-	return selectLatestRules(ruleList), nil
+	return _selectLatestRules(ruleList), nil
 }
 
-func selectLatestRules(rulesList []rules) rules {
+func _selectLatestRules(rulesList []rules) rules {
 	if len(rulesList) == 0 {
 		return rules{}
 	}
@@ -120,7 +120,7 @@ func selectLatestRules(rulesList []rules) rules {
 	var latestRules rules
 	var latestRevisionTime int64 = -1
 	for _, item := range rulesList {
-		if !isValidRules(item) {
+		if !_isValidRules(item) {
 			continue
 		}
 		if item.Revision == "" {
@@ -134,24 +134,4 @@ func selectLatestRules(rulesList []rules) rules {
 		}
 	}
 	return latestRules
-}
-
-func LoadAuthInfo(cacheDir string) (OFAuthInfo, error) {
-	data, err := os.ReadFile(filepath.Join(cacheDir, "auth"))
-	if err != nil {
-		return OFAuthInfo{}, err
-	}
-	var auth OFAuthInfo
-	err = json.Unmarshal(data, &auth)
-	return auth, err
-}
-
-func cacheAuthInfo(cacheDir string, auth OFAuthInfo) {
-	data, err := json.Marshal(auth)
-	if err != nil {
-		fmt.Printf("marshal auth failed, err: %v\n", err)
-		return
-	}
-	fileutil.CreateDir(cacheDir)
-	os.WriteFile(filepath.Join(cacheDir, "auth"), data, 0644)
 }

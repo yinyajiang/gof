@@ -30,7 +30,7 @@ func NewOFAPI(config OFApiConfig) (*OFAPI, error) {
 		cacheDir: config.ApiCacheDir,
 	}
 
-	rules, err := LoadRules(api.cacheDir, config.OptionalRulesURI)
+	rules, err := loadRules(api.cacheDir, config.OptionalRulesURI)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (c *OFAPI) Auth(authInfo OFAuthInfo, check ...bool) error {
 		if c.HasAuthInfo() {
 			return errors.New("AuthInfo is invalid")
 		}
-		auth, err := LoadAuthInfo(c.cacheDir)
+		auth, err := loadCacheAuthInfo(c.cacheDir)
 		if err != nil {
 			return errors.New("AuthInfo is invalid")
 		}
