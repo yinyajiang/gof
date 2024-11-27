@@ -90,12 +90,16 @@ func (ie *OFIE) OFDRM() *ofdrm.OFDRM {
 	return ie.drmapi
 }
 
-func (ie *OFIE) Auth(authInfo ofapi.OFAuthInfo) error {
-	return ie.api.Auth(authInfo)
+func (ie *OFIE) Auth(authInfo ofapi.OFAuthInfo, check ...bool) error {
+	return ie.api.Auth(authInfo, check...)
 }
 
-func (ie *OFIE) AuthByString(authInfo string) error {
-	return ie.api.AuthByString(authInfo)
+func (ie *OFIE) AuthByRaw(ua, cookiefile string, check ...bool) error {
+	return ie.api.AuthByRaw(ua, cookiefile, check...)
+}
+
+func (ie *OFIE) AuthByString(authInfo string, check ...bool) error {
+	return ie.api.AuthByString(authInfo, check...)
 }
 
 func (ie *OFIE) Serve(ctx context.Context, addr string) {

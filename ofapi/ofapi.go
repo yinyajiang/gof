@@ -9,6 +9,7 @@ import (
 
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/yinyajiang/gof"
 	"github.com/yinyajiang/gof/common"
 	"github.com/yinyajiang/gof/ofapi/model"
 )
@@ -78,9 +79,14 @@ func (c *OFAPI) AuthByCache(check ...bool) error {
 func (c *OFAPI) Auth(authInfo OFAuthInfo, check ...bool) error {
 	authInfo = correctAuthInfo(authInfo)
 
-	if c.req.AuthInfo().String() == authInfo.String() {
+	if c.req.AuthInfo().String() == authInfo.String() && !authInfo.IsEmpty() {
 		fmt.Println("authInfo is same, skip")
 		return nil
+	}
+
+	if gof.IsDebug() {
+		fmt.Printf("new authInfo: %s\n", authInfo.String())
+		fmt.Printf("old authInfo: %s\n", c.req.AuthInfo().String())
 	}
 
 	//from cache
