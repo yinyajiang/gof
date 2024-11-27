@@ -51,8 +51,8 @@ func HttpDo(req *http.Request, readAll ...bool) (*http.Response, []byte, error) 
 			lastRequestTime = now
 		} else {
 			since := now.Sub(lastRequestTime)
-			if since < gof.MaxTimeInterval {
-				time.Sleep(time.Duration(rand.Int63n(int64(gof.MaxTimeInterval - since))))
+			if since < gof.MaxHttpTimeInterval {
+				time.Sleep(time.Duration(rand.Int63n(int64(gof.MaxHttpTimeInterval - since))))
 			}
 		}
 		lastRequestTime = now

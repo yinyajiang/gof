@@ -84,11 +84,15 @@ func (r *Req) GetUnmarshal(urlpath string, params any, pointer any) (err error) 
 	return err
 }
 
-func (r *Req) GetFileInfo(u string) (common.HttpFileInfo, error) {
-	if common.MaybeDrmURL(u) {
-		err := fmt.Errorf("[warning] url(%s) maybe drm url, use ofdrm.GetFileInfo instead", u)
-		return common.HttpFileInfo{}, err
-	}
+func (r *Req) GetFileInfo(u string) (ret common.HttpFileInfo, err error) {
+	defer func() {
+		if err != nil {
+			if strings.Contains(u, "cdn3.onlyfans.com/dash/files") {
+				err = fmt.Errorf("url(%s) maybe drm url, use ofdrm.GetFileInfo instead", u)
+			}
+		}
+	}()
+
 	req, err := r.newHttpRequestWithUA("GET", u, nil)
 	if err != nil {
 		return common.HttpFileInfo{}, err

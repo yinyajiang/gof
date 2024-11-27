@@ -3,9 +3,6 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
-	"github.com/yinyajiang/gof"
 )
 
 func MustMarshalJSON(v any) []byte {
@@ -19,8 +16,4 @@ func MustMarshalJSON(v any) []byte {
 
 func MustUnmarshalJSONStr(v any) string {
 	return string(MustMarshalJSON(v))
-}
-
-func MaybeDrmURL(u string) bool {
-	return strings.Contains(u, gof.OFDrmMaybe)
 }
