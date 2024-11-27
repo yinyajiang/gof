@@ -10,14 +10,13 @@ type DRMInfo struct {
 	PostID  int64
 }
 
+// uri: url、filepath、[]byte
 type DRMWVDOption struct {
-	WVD              []byte // wvd,
-	RawWVDID         []byte // wvd client id
-	RawWVDPrivateKey []byte // wvd private key
+	WVDURI         any
+	WVDMd5URIIfZip any
 
-	WVDURI              string // wvd uri
-	ClientIDURI         string // wvd client id uri
-	ClientPrivateKeyURI string // wvd private key uri
+	ClientIDURI         any // wvd client id uri
+	ClientPrivateKeyURI any // wvd private key uri
 
-	ClientCacheDir string
+	WVDCacheDir string
 }

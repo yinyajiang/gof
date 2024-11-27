@@ -112,7 +112,7 @@ func (r *Req) buildSignedRequest(method, urlpath string, params any, body_ ...[]
 
 func (r *Req) newHttpRequestWithUA(method, url string, body_ ...[]byte) (*http.Request, error) {
 	if !strings.HasPrefix(url, "http") {
-		panic("url must start with http:" + url)
+		return nil, fmt.Errorf("url must start with http: %s", url)
 	}
 	var body io.Reader
 	if len(body_) > 0 {

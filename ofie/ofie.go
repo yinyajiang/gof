@@ -47,8 +47,8 @@ func NewOFIE(config Config) (*OFIE, error) {
 	if config.OFApiConfig.ApiCacheDir == "" {
 		config.OFApiConfig.ApiCacheDir = path.Join(config.CacheDir, "of_apis")
 	}
-	if config.OFDRMConfig.WVDOption.ClientCacheDir == "" {
-		config.OFDRMConfig.WVDOption.ClientCacheDir = path.Join(config.CacheDir, "of_drms")
+	if config.OFDRMConfig.WVDOption.WVDCacheDir == "" {
+		config.OFDRMConfig.WVDOption.WVDCacheDir = path.Join(config.CacheDir, "of_drms")
 	}
 	if config.Debug {
 		gof.SetDebug(true)
@@ -336,8 +336,8 @@ func (ie *OFIE) extractUser(allEmptryOrUserName string, allEmptryOrMediaType str
 		}
 		for _, sub := range subs {
 			users = append(users, extractIdentifier{
-				id:        sub.ID,
-				hintTitle: sub.Username,
+				id:          sub.ID,
+				titlePrefix: sub.Username,
 			})
 		}
 
@@ -348,8 +348,8 @@ func (ie *OFIE) extractUser(allEmptryOrUserName string, allEmptryOrMediaType str
 		}
 		users = []extractIdentifier{
 			{
-				id:        usr.ID,
-				hintTitle: allEmptryOrUserName,
+				id:          usr.ID,
+				titlePrefix: allEmptryOrUserName,
 			},
 		}
 	}
@@ -392,8 +392,8 @@ func (ie *OFIE) extractCollectionsList(allEmptryOrID string) ([]MediaInfo, error
 		users := []extractIdentifier{}
 		for _, user := range userList {
 			users = append(users, extractIdentifier{
-				id:        user.ID,
-				hintTitle: user.Username,
+				id:          user.ID,
+				titlePrefix: user.Username,
 			})
 		}
 		return ie.extractUsersByIdentifier(users, "")
@@ -401,8 +401,8 @@ func (ie *OFIE) extractCollectionsList(allEmptryOrID string) ([]MediaInfo, error
 }
 
 type extractIdentifier struct {
-	id        any
-	hintTitle string
+	id          any
+	titlePrefix string
 }
 
 func (ie *OFIE) extractUsersByIdentifier(users []extractIdentifier, allEmptryOrMediaType string) ([]MediaInfo, error) {
@@ -425,7 +425,7 @@ func (ie *OFIE) _extractUsersByIdentifier(users []extractIdentifier, allEmptryOr
 				return "", nil, e
 			}
 			posts, e := ie.api.GetUserMedias(userID, ofapi.UserMedias(allEmptryOrMediaType))
-			return user.hintTitle, posts, e
+			return user.titlePrefix, posts, e
 		})
 	}
 	return ie.parallelExtractFunc(funs, 5)
@@ -447,7 +447,7 @@ func (ie *OFIE) extractChat(allEmptryOrID string) ([]MediaInfo, error) {
 	}
 }
 
-type extractFunc func() (hintTitle string, posts []model.Post, error error)
+type extractFunc func() (titlePrefix string, posts []model.Post, error error)
 
 func (ie *OFIE) parallelExtractFunc(funs []extractFunc, parallelCount int) ([]MediaInfo, error) {
 	if parallelCount <= 0 {
@@ -466,13 +466,13 @@ func (ie *OFIE) parallelExtractFunc(funs []extractFunc, parallelCount int) ([]Me
 				<-ch
 				wg.Done()
 			}()
-			hintTitle, posts, err := fun()
+			titlePrefix, posts, err := fun()
 			lock.Lock()
 			defer lock.Unlock()
 
 			var medias []MediaInfo
 			if err == nil {
-				medias, err = ie.collecMutilMedias(hintTitle, posts)
+				medias, err = ie.collecMutilMedias(titlePrefix, posts)
 			}
 			if err != nil {
 				if firstErr == nil {
@@ -490,14 +490,14 @@ func (ie *OFIE) parallelExtractFunc(funs []extractFunc, parallelCount int) ([]Me
 	return results, firstErr
 }
 
-func (ie *OFIE) collecMutilMedias(hintTitle string, posts []model.Post) ([]MediaInfo, error) {
+func (ie *OFIE) collecMutilMedias(titlePrefix string, posts []model.Post) ([]MediaInfo, error) {
 	if len(posts) == 0 {
 		return nil, fmt.Errorf("posts is empty")
 	}
 
 	results := []MediaInfo{}
 	for _, post := range posts {
-		medias, e := ie.collectMedias(hintTitle, post)
+		medias, e := ie.collectMedias(titlePrefix, post)
 		if e == nil {
 			results = append(results, medias...)
 		}
@@ -512,26 +512,26 @@ func (ie *OFIE) collecMutilMedias(hintTitle string, posts []model.Post) ([]Media
 	return results, nil
 }
 
-func (ie *OFIE) collectMedias(hintTitle string, post model.Post) ([]MediaInfo, error) {
+func (ie *OFIE) collectMedias(titlePrefix string, post model.Post) ([]MediaInfo, error) {
 	if len(post.Media) == 0 {
 		return nil, fmt.Errorf("no media found")
 	}
-	hintTitle = strings.Trim(hintTitle, titleSeparator)
+	titlePrefix = strings.Trim(titlePrefix, titleSeparator)
 
 	mediaSet := make(map[int64]MediaInfo)
 	for i, media := range post.Media {
 		if !media.CanView || media.Files == nil {
 			continue
 		}
-		if hintTitle == "" {
-			hintTitle = post.FromUser.Username
+		if titlePrefix == "" {
+			titlePrefix = post.FromUser.Username
 		}
 		dm := MediaInfo{
 			PostID:  post.ID,
 			MediaID: media.ID,
 			Type:    media.Type,
 			Time:    times(media.CreatedAt, post.CreatedAt, post.PostedAt),
-			Title:   strings.TrimLeft(fmt.Sprintf("%s%s%x%s%x", hintTitle, titleSeparator, post.ID, titleSeparator, i), titleSeparator),
+			Title:   strings.TrimLeft(fmt.Sprintf("%s%s%x%s%x", titlePrefix, titleSeparator, post.ID, titleSeparator, i), titleSeparator),
 		}
 
 		if media.Files.Drm == nil {

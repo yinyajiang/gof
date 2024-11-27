@@ -2,6 +2,8 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -100,4 +102,47 @@ func CleanEmptryString(arr []string) []string {
 	return slice.Filter(arr, func(_ int, s string) bool {
 		return s != ""
 	})
+}
+
+func ReadURI(uri any) ([]byte, error) {
+	if uri == nil {
+		return nil, fmt.Errorf("url is nil")
+	}
+	switch uri := uri.(type) {
+	case string:
+		if !strings.HasPrefix(uri, "http") && fileutil.IsExist(uri) {
+			return os.ReadFile(uri)
+		}
+		return DownloadBytes(uri)
+	case []byte:
+		return uri, nil
+	}
+	return nil, fmt.Errorf("invalid uri: %v", uri)
+}
+
+func IsURI(uri any, ext string) bool {
+	return strings.EqualFold(URIExt(uri), strings.TrimPrefix(ext, "."))
+}
+
+func URIExt(uri any) string {
+	str, ok := uri.(string)
+	if !ok {
+		return ""
+	}
+	if !strings.HasPrefix(str, "http") && fileutil.IsExist(str) {
+		return strings.TrimPrefix(filepath.Ext(str), ".")
+	}
+	u, err := url.Parse(str)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimPrefix(filepath.Ext(u.Path), ".")
+}
+
+func ReadURIString(uri any) (string, error) {
+	data, err := ReadURI(uri)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }

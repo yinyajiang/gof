@@ -36,8 +36,7 @@ func NewOFAPI(config OFApiConfig) (*OFAPI, error) {
 	}
 	api.req.SetRules(rules)
 
-	//try from cache
-	api.Auth()
+	api.AuthByCache()
 	return api, nil
 }
 
@@ -45,7 +44,7 @@ func (c *OFAPI) Req() *Req {
 	return c.req
 }
 
-func (c *OFAPI) IsAuthed() bool {
+func (c *OFAPI) HasAuthInfo() bool {
 	authInfo := c.req.AuthInfo()
 	rules := c.req.Rules()
 	return authInfo.Cookie != "" &&
@@ -57,27 +56,43 @@ func (c *OFAPI) IsAuthed() bool {
 /*
 user_id:={} || user_agent:={} || x_bc:={} || cookie:={ sess={};auth_id={} }
 */
-func (c *OFAPI) AuthByString(authInfo string) error {
+func (c *OFAPI) AuthByString(authInfo string, check ...bool) error {
 	if authInfo == "" {
 		return errors.New("authInfo is empty")
 	}
-	return c.Auth(parseOFAuthInfo(authInfo))
+	return c.Auth(string2AuthInfo(authInfo), check...)
 }
 
-func (c *OFAPI) Auth(authInfo_ ...OFAuthInfo) error {
-
-	authInfo := OFAuthInfo{}
-	if len(authInfo_) != 0 {
-		authInfo = authInfo_[0]
+func (c *OFAPI) AuthByRaw(ua, cookiefile string, check ...bool) error {
+	cookies, err := common.ParseCookieFile(cookiefile)
+	if err != nil {
+		return err
 	}
+	cookiestr := ""
+	for k, v := range cookies {
+		cookiestr += fmt.Sprintf("%s=%s;", k, v)
+	}
+	return c.Auth(
+		OFAuthInfo{
+			Cookie:    cookiestr,
+			UserAgent: ua,
+		},
+		check...,
+	)
+}
 
+func (c *OFAPI) AuthByCache(check ...bool) error {
+	return c.Auth(OFAuthInfo{}, check...)
+}
+
+func (c *OFAPI) Auth(authInfo OFAuthInfo, check ...bool) error {
 	if c.req.AuthInfo().String() == authInfo.String() {
 		return nil
 	}
 
 	//from cache
 	if authInfo.IsEmpty() {
-		if c.IsAuthed() {
+		if c.HasAuthInfo() {
 			return errors.New("AuthInfo is invalid")
 		}
 		auth, err := LoadAuthInfo(c.cacheDir)
@@ -93,11 +108,15 @@ func (c *OFAPI) Auth(authInfo_ ...OFAuthInfo) error {
 		return errors.New("AuthInfo is invalid")
 	}
 	c.req.SetAuthInfo(authInfo)
+
+	if len(check) != 0 && check[0] {
+		return c.CheckAuth()
+	}
 	return nil
 }
 
 func (c *OFAPI) CheckAuth() error {
-	if !c.IsAuthed() {
+	if !c.HasAuthInfo() {
 		return errors.New("not authed")
 	}
 

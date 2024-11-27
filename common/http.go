@@ -1,15 +1,19 @@
 package common
 
 import (
+	"bufio"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/duke-git/lancet/v2/fileutil"
 	"github.com/yinyajiang/gof"
 	"golang.org/x/exp/rand"
 )
@@ -164,4 +168,68 @@ func ConvertCookieToNetscape(cookieStr string, domain string) string {
 		result.WriteString(line)
 	}
 	return result.String()
+}
+
+func ParseCookieFile(cookiefile string) (map[string]string, error) {
+	file, err := os.Open(cookiefile)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	cookies := map[string]string{}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "#") || line == "" {
+			continue
+		}
+		fields := strings.Split(line, "\t")
+		if len(fields) < 2 {
+			continue
+		}
+		cookies[strings.TrimSpace(fields[len(fields)-2])] = strings.TrimSpace(fields[len(fields)-1])
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return cookies, nil
+}
+
+func DownloadFile(url, path string) error {
+	client := HttpClient()
+	resp, err := client.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	fileutil.CreateDir(filepath.Dir(path))
+
+	out, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+func DownloadBytes(url string) ([]byte, error) {
+	client := HttpClient()
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
+}
+
+func DownloadString(url string) (string, error) {
+	data, err := DownloadBytes(url)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }

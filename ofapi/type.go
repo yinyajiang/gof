@@ -91,7 +91,7 @@ type OFAuthInfo struct {
 }
 
 func (authInfo OFAuthInfo) String() string {
-	return authInfoToString(authInfo)
+	return authInfo2String(authInfo)
 }
 
 func (authInfo OFAuthInfo) IsEmpty() bool {

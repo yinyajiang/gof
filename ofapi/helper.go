@@ -62,7 +62,7 @@ type moreMarker struct {
 /*
 user_id:={} || user_agent:={} || x_bc:={} || cookie:={ sess={};auth_id={} }
 */
-func parseOFAuthInfo(authInfo string) OFAuthInfo {
+func string2AuthInfo(authInfo string) OFAuthInfo {
 	authinfo := OFAuthInfo{}
 	for _, s := range strings.Split(authInfo, "||") {
 		kv := strings.SplitN(s, ":=", 2)
@@ -86,7 +86,7 @@ func parseOFAuthInfo(authInfo string) OFAuthInfo {
 	return correctAuthInfo(authinfo)
 }
 
-func authInfoToString(authInfo OFAuthInfo) string {
+func authInfo2String(authInfo OFAuthInfo) string {
 	return fmt.Sprintf("user_id:=%s || user_agent:=%s || x_bc:=%s || cookie:=%s", authInfo.UserID, authInfo.UserAgent, authInfo.X_BC, authInfo.Cookie)
 }
 
@@ -99,11 +99,14 @@ func correctAuthInfo(authInfo OFAuthInfo) OFAuthInfo {
 		}
 		authInfo.Cookie += "user_id=" + authInfo.UserID
 	}
-	authInfo.Cookie = correctCookie(authInfo.Cookie)
+	if authInfo.X_BC == "" {
+		authInfo.X_BC = common.FindCookie(authInfo.Cookie, "fp")
+	}
+	authInfo.Cookie = trimCookie(authInfo.Cookie)
 	return authInfo
 }
 
-func correctCookie(cookie string) string {
+func trimCookie(cookie string) string {
 	sess := ""
 	auth_id := ""
 	common.ForeachCookie(cookie, func(k, v string) bool {

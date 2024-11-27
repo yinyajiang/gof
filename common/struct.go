@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/yinyajiang/gof"
@@ -10,7 +11,8 @@ import (
 func MustMarshalJSON(v any) []byte {
 	b, err := json.Marshal(v)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return []byte{}
 	}
 	return b
 }

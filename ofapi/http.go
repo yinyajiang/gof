@@ -12,19 +12,6 @@ func ApiURL(format string, a ...any) string {
 }
 
 func ApiURLPath(format string, a ...any) string {
-	if !strings.HasPrefix(gof.OFApiPathBase, "/") {
-		panic("OFApiPathBase must start with / : " + gof.OFApiPathBase)
-	}
-	if strings.HasSuffix(gof.OFApiPathBase, "/") {
-		panic("OFApiPathBase must not end with / : " + gof.OFApiPathBase)
-	}
-	if !strings.HasPrefix(gof.OFApiDomain, "https://") {
-		panic("OFApiDomain must start with https:// : " + gof.OFApiDomain)
-	}
-	if strings.HasSuffix(gof.OFApiDomain, "/") {
-		panic("OFApiDomain must not end with / : " + gof.OFApiDomain)
-	}
-
 	urlpath := fmt.Sprintf(format, a...)
 
 	if !strings.HasPrefix(gof.OFApiDomain, "https://www.") {
@@ -33,9 +20,8 @@ func ApiURLPath(format string, a ...any) string {
 	if strings.HasPrefix(urlpath, gof.OFApiDomain) {
 		urlpath, _ = strings.CutPrefix(urlpath, gof.OFApiDomain)
 	}
-
 	if !strings.HasPrefix(urlpath, "/") {
-		panic("urlpath must start with / : " + urlpath)
+		urlpath = "/" + urlpath
 	}
 
 	if strings.HasPrefix(urlpath, gof.OFApiPathBase) {
