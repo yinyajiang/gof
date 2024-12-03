@@ -28,7 +28,14 @@ func main() {
 		panic(err)
 	}
 	if !cfg.OFAuthInfo.IsEmpty() {
-		err = dl.Auth(cfg.OFAuthInfo)
+		err = dl.Auth(cfg.OFAuthInfo, true)
+		if err != nil {
+			panic(err)
+		}
+	}
+	err = dl.CheckAuth()
+	if err != nil {
+		err = dl.AuthByWebview(true)
 		if err != nil {
 			panic(err)
 		}

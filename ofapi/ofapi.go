@@ -12,7 +12,10 @@ import (
 	"github.com/yinyajiang/gof"
 	"github.com/yinyajiang/gof/common"
 	"github.com/yinyajiang/gof/ofapi/model"
+	"github.com/yinyajiang/gof/ofwebview"
 )
+
+var ErrorAuth = errors.New("need auth")
 
 type OFAPI struct {
 	req *Req
@@ -64,8 +67,16 @@ func (c *OFAPI) AuthByString(authInfo string, check ...bool) error {
 	return c.Auth(String2AuthInfo(authInfo), check...)
 }
 
-func (c *OFAPI) AuthByRaw(ua, cookiefile string, check ...bool) error {
-	info, err := Raw2AuthInfo(ua, cookiefile)
+func (c *OFAPI) AuthByWebviewLoginResult(info ofwebview.LoginResult, check ...bool) error {
+	authInfo, err := cookies2AuthInfo(info.UA, info.Cookies)
+	if err != nil {
+		return err
+	}
+	return c.Auth(authInfo, check...)
+}
+
+func (c *OFAPI) AuthByCookieFile(ua, cookiefile string, check ...bool) error {
+	info, err := CookieFile2AuthInfo(ua, cookiefile)
 	if err != nil {
 		return err
 	}
@@ -122,15 +133,15 @@ func (c *OFAPI) Auth(authInfo OFAuthInfo, check ...bool) error {
 
 func (c *OFAPI) CheckAuth() error {
 	if !c.HasAuthInfo() {
-		return errors.New("not authed")
+		return ErrorAuth
 	}
 
 	me, err := c.GetMe()
 	if err != nil {
-		return err
+		return fmt.Errorf("%w, GetMe failed: %v", ErrorAuth, err)
 	}
 	if me.Username == "" && me.Name == "" {
-		return errors.New("auth failed")
+		return ErrorAuth
 	}
 	return nil
 }

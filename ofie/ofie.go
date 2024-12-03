@@ -3,6 +3,7 @@ package ofie
 import (
 	"context"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -22,11 +23,13 @@ import (
 	"github.com/yinyajiang/gof/ofapi"
 	"github.com/yinyajiang/gof/ofapi/model"
 	"github.com/yinyajiang/gof/ofdrm"
+	"github.com/yinyajiang/gof/ofwebview"
 )
 
 type Config struct {
 	OFApiConfig                            ofapi.OFApiConfig
 	OFDRMConfig                            ofdrm.OFDRMConfig
+	OFWebViewConfig                        ofwebview.OFWebviewConfig
 	CacheDir                               string
 	Debug                                  bool
 	CacheSeconds                           int
@@ -37,6 +40,7 @@ type Config struct {
 type OFIE struct {
 	api                                    *ofapi.OFAPI
 	drmapi                                 *ofdrm.OFDRM
+	webview                                *ofwebview.WebView
 	cacheDir                               string
 	cacheSeconds                           int
 	preferMediaTypeWhenExtractAllMediasURL string
@@ -49,6 +53,9 @@ func NewOFIE(config Config) (*OFIE, error) {
 	}
 	if config.OFDRMConfig.WVDOption.WVDCacheDir == "" {
 		config.OFDRMConfig.WVDOption.WVDCacheDir = path.Join(config.CacheDir, "of_drms")
+	}
+	if config.OFWebViewConfig.WebviewWorkDir == "" {
+		config.OFWebViewConfig.WebviewWorkDir = path.Join(config.CacheDir, "of_webview")
 	}
 	if config.Debug {
 		gof.SetDebug(true)
@@ -70,10 +77,12 @@ func NewOFIE(config Config) (*OFIE, error) {
 	} else {
 		config.PreferMediaTypeWhenExtractAllMediasURL = string(ofapi.UserAll)
 	}
+	webview := ofwebview.NewWebView(config.OFWebViewConfig)
 
 	ie := &OFIE{
 		api:                                    api,
 		drmapi:                                 drmapi,
+		webview:                                webview,
 		cacheDir:                               path.Join(config.CacheDir, "of_ies"),
 		cacheSeconds:                           config.CacheSeconds,
 		preferMediaTypeWhenExtractAllMediasURL: config.PreferMediaTypeWhenExtractAllMediasURL,
@@ -94,12 +103,31 @@ func (ie *OFIE) Auth(authInfo ofapi.OFAuthInfo, check ...bool) error {
 	return ie.api.Auth(authInfo, check...)
 }
 
-func (ie *OFIE) AuthByRaw(ua, cookiefile string, check ...bool) error {
-	return ie.api.AuthByRaw(ua, cookiefile, check...)
+func (ie *OFIE) CheckAuth() error {
+	return ie.api.CheckAuth()
+}
+
+func (ie *OFIE) AuthByCookieFile(ua, cookiefile string, check ...bool) error {
+	return ie.api.AuthByCookieFile(ua, cookiefile, check...)
 }
 
 func (ie *OFIE) AuthByString(authInfo string, check ...bool) error {
 	return ie.api.AuthByString(authInfo, check...)
+}
+
+func (ie *OFIE) AuthByWebview(check ...bool) error {
+	if !ie.webview.IsEnable() {
+		return fmt.Errorf("webview is not enable")
+	}
+	result, err := ie.webview.Login()
+	if err != nil {
+		return err
+	}
+	return ie.api.AuthByWebviewLoginResult(result, check...)
+}
+
+func (ie *OFIE) InstallWebView(checkUpdate bool) error {
+	return ie.webview.Install(checkUpdate)
 }
 
 func (ie *OFIE) Serve(ctx context.Context, addr string) {
@@ -163,6 +191,17 @@ func (ie *OFIE) Test(url string, disableCache bool) {
 }
 
 func (ie *OFIE) ExtractMedias(url string, option ExtractOption) (ret ExtractResult, err error) {
+	ret, err = ie.extractMedias(url, option)
+	if ie.webview.IsEnable() && errors.Is(err, ofapi.ErrorAuth) {
+		err = ie.AuthByWebview(true)
+		if err == nil {
+			ret, err = ie.extractMedias(url, option)
+		}
+	}
+	return
+}
+
+func (ie *OFIE) extractMedias(url string, option ExtractOption) (ret ExtractResult, err error) {
 	if url == "" {
 		url = gof.OFPostDomain
 	}
@@ -595,7 +634,7 @@ func (ie *OFIE) convertApiError(err error) error {
 	}
 	e := ie.api.CheckAuth()
 	if e != nil {
-		return fmt.Errorf("try to Sign in again : %w", e)
+		return e
 	}
 	return err
 }

@@ -45,11 +45,15 @@ func String2AuthInfo(authInfo string) OFAuthInfo {
 	return correctAuthInfo(authinfo)
 }
 
-func Raw2AuthInfo(ua, cookiefile string) (OFAuthInfo, error) {
+func CookieFile2AuthInfo(ua, cookiefile string) (OFAuthInfo, error) {
 	cookies, err := common.ParseCookieFile(cookiefile)
 	if err != nil {
 		return OFAuthInfo{}, err
 	}
+	return cookies2AuthInfo(ua, cookies)
+}
+
+func cookies2AuthInfo(ua string, cookies map[string]string) (OFAuthInfo, error) {
 	cookiestr := ""
 	for k, v := range cookies {
 		cookiestr += fmt.Sprintf("%s=%s;", k, v)
