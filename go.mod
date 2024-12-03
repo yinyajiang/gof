@@ -30,7 +30,7 @@ require (
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	github.com/wailsapp/go-webview2 v1.0.18 // indirect
-	github.com/yinyajiang/webviewloader v0.0.0-20241203055715-8da38125daf7 // indirect
+	github.com/yinyajiang/webviewloader v0.0.0-20241203072823-2bbe741a29dc // indirect
 	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
