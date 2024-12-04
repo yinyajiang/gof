@@ -55,6 +55,8 @@ github.com/valyala/tcplisten v1.0.0 h1:rBHj/Xf+E1tRGZyWIWwJDiRY0zc1Js+CV5DqwacVS
 github.com/valyala/tcplisten v1.0.0/go.mod h1:T0xQ8SeCZGxckz9qRXTfG43PvQ/mcWh7FwZEA7Ioqkc=
 github.com/wailsapp/go-webview2 v1.0.18 h1:SSSCoLA+MYikSp1U0WmvELF/4c3x5kH8Vi31TKyZ4yk=
 github.com/wailsapp/go-webview2 v1.0.18/go.mod h1:qJmWAmAmaniuKGZPWwne+uor3AHMB5PFhqiK0Bbj8kc=
+github.com/winlabs/gowin32 v0.0.0-20240930213947-f504d7e14639 h1:9MJGHk/ErosklMjfeS3xTwvDUET8xHH+b9H2oi/GqbY=
+github.com/winlabs/gowin32 v0.0.0-20240930213947-f504d7e14639/go.mod h1:N51TYkG9JGR5sytj0EoPl31Xg2kuB507lxEmrwSNvfQ=
 github.com/yinyajiang/load_cookie v0.0.0-20241202085500-25bc95ac2a43 h1:i3TTnXXGH6oeTgeTFW6fXZ5XucU5tKGktPK5G1qON2g=
 github.com/yinyajiang/load_cookie v0.0.0-20241202085500-25bc95ac2a43/go.mod h1:/jCjc2ixl70oF6wIvwbTDxFDMV98O73Bj7OHQxT38pw=
 github.com/yinyajiang/webviewloader v0.0.0-20241202090409-56e3cd79e8c9 h1:pu1WA3Ip5e7MBaW4ScDcGE29esTxZOFvIDQjpzASQj0=
@@ -73,6 +75,8 @@ github.com/yinyajiang/webviewloader v0.0.0-20241203072823-2bbe741a29dc h1:1jDw2f
 github.com/yinyajiang/webviewloader v0.0.0-20241203072823-2bbe741a29dc/go.mod h1:0QjBNFxPQ6kySsZNBg0xGWN2zfuu3oRTDB/gKUphqkM=
 github.com/yinyajiang/webviewloader v0.0.0-20241204020856-4bb49ac10895 h1:xHwcZ/2FvgOc52euEwgaIU4Ix5gEnoQzjB7HubZkvis=
 github.com/yinyajiang/webviewloader v0.0.0-20241204020856-4bb49ac10895/go.mod h1:0QjBNFxPQ6kySsZNBg0xGWN2zfuu3oRTDB/gKUphqkM=
+github.com/yinyajiang/webviewloader v0.0.0-20241204032243-7777bbf18912 h1:cqac0JYYDy3rroIa+R8DGSQltPVM6al969WZuR5deP4=
+github.com/yinyajiang/webviewloader v0.0.0-20241204032243-7777bbf18912/go.mod h1:T1bFqLf1aponZ+rHk2guVOte3Eveg5HPLGWSGbdILtg=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20210921155107-089bfa567519/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
