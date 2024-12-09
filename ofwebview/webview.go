@@ -60,6 +60,14 @@ func (w *WebView) Check(checkUpdate bool) error {
 }
 
 func (w *WebView) Login() (LoginResult, error) {
+	err := w.Check(false)
+	if err != nil {
+		err = w.Install(false)
+		if err != nil {
+			return LoginResult{}, err
+		}
+	}
+
 	hasLockFailed := false
 	for {
 		if w.lock.TryLock() {
