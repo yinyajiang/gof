@@ -35,6 +35,7 @@ type Config struct {
 	CacheSeconds                           int
 	PreferMediaTypeWhenExtractAllMediasURL string //video,photo,all
 	MustFetchDRMSecretsByClient            bool
+	WebViewAuthTryCount                    int
 }
 
 type OFIE struct {
@@ -45,6 +46,7 @@ type OFIE struct {
 	cacheSeconds                           int
 	preferMediaTypeWhenExtractAllMediasURL string
 	mustFetchDRMSecretsByClient            bool
+	webViewAuthTryCount                    int
 }
 
 func NewOFIE(config Config) (*OFIE, error) {
@@ -56,6 +58,9 @@ func NewOFIE(config Config) (*OFIE, error) {
 	}
 	if config.OFWebViewConfig.WebviewWorkDir == "" {
 		config.OFWebViewConfig.WebviewWorkDir = path.Join(config.CacheDir, "of_webview")
+	}
+	if config.WebViewAuthTryCount <= 0 {
+		config.WebViewAuthTryCount = 3
 	}
 	if config.Debug {
 		gof.SetDebug(true)
@@ -87,6 +92,7 @@ func NewOFIE(config Config) (*OFIE, error) {
 		cacheSeconds:                           config.CacheSeconds,
 		preferMediaTypeWhenExtractAllMediasURL: config.PreferMediaTypeWhenExtractAllMediasURL,
 		mustFetchDRMSecretsByClient:            config.MustFetchDRMSecretsByClient,
+		webViewAuthTryCount:                    config.WebViewAuthTryCount,
 	}
 	return ie, nil
 }
@@ -119,11 +125,21 @@ func (ie *OFIE) AuthByWebview(check ...bool) error {
 	if !ie.webview.IsEnable() {
 		return fmt.Errorf("webview is not enable")
 	}
-	result, err := ie.webview.Login()
+	var loginresult ofwebview.LoginResult
+	var err error
+
+	count := ie.webViewAuthTryCount
+	for count > 0 {
+		loginresult, err = ie.webview.Login()
+		if err == nil {
+			break
+		}
+		count--
+	}
 	if err != nil {
 		return err
 	}
-	return ie.api.AuthByWebviewLoginResult(result, check...)
+	return ie.api.AuthByWebviewLoginResult(loginresult, check...)
 }
 
 func (ie *OFIE) InstallWebView(checkUpdate bool) error {
