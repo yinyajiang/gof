@@ -60,7 +60,7 @@ func NewOFIE(config Config) (*OFIE, error) {
 		config.OFWebViewConfig.WebviewWorkDir = path.Join(config.CacheDir, "of_webview")
 	}
 	if config.WebViewAuthTryCount <= 0 {
-		config.WebViewAuthTryCount = 3
+		config.WebViewAuthTryCount = 2
 	}
 	if config.Debug {
 		gof.SetDebug(true)
