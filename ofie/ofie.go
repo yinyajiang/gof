@@ -49,6 +49,8 @@ type OFIE struct {
 	webViewAuthTryCount                    int
 }
 
+var errorNotFoundMedias = errors.New("no media found")
+
 func NewOFIE(config Config) (*OFIE, error) {
 	if config.OFApiConfig.ApiCacheDir == "" {
 		config.OFApiConfig.ApiCacheDir = path.Join(config.CacheDir, "of_apis")
@@ -208,7 +210,7 @@ func (ie *OFIE) Test(url string, disableCache bool) {
 
 func (ie *OFIE) ExtractMedias(url string, option ExtractOption) (ret ExtractResult, err error) {
 	ret, err = ie.extractMedias(url, option)
-	if ie.webview.IsEnable() && errors.Is(err, ofapi.ErrorAuth) {
+	if err != nil && ie.webview.IsEnable() && (errors.Is(err, ofapi.ErrorAuth) || errors.Is(err, errorNotFoundMedias)) {
 		err = ie.AuthByWebview(true)
 		if err == nil {
 			ret, err = ie.extractMedias(url, option)
@@ -412,7 +414,13 @@ func (ie *OFIE) extractUser(allEmptryOrUserName string, allEmptryOrMediaType str
 			},
 		}
 	}
-	return ie.extractUsersByIdentifier(users, allEmptryOrMediaType)
+	medias, err := ie.extractUsersByIdentifier(users, allEmptryOrMediaType)
+	if err != nil && errors.Is(err, errorNotFoundMedias) && allEmptryOrUserName != "" {
+		if !ie.api.IsSubscribed(users[0].id) {
+			return nil, fmt.Errorf("%w: %s", ofapi.ErrorAuth, "try change login account")
+		}
+	}
+	return medias, err
 }
 
 func (ie *OFIE) extractBookmarks(allEmptryOrID string, allEmptryOrMediaType string) ([]MediaInfo, error) {
@@ -563,7 +571,7 @@ func (ie *OFIE) collecMutilMedias(titlePrefix string, posts []model.Post) ([]Med
 	}
 
 	if len(results) == 0 {
-		return nil, fmt.Errorf("no media found")
+		return nil, errorNotFoundMedias
 	}
 	slice.SortBy(results, func(i, j MediaInfo) bool {
 		return i.Time.After(j.Time)
@@ -573,7 +581,7 @@ func (ie *OFIE) collecMutilMedias(titlePrefix string, posts []model.Post) ([]Med
 
 func (ie *OFIE) collectMedias(titlePrefix string, post model.Post) ([]MediaInfo, error) {
 	if len(post.Media) == 0 {
-		return nil, fmt.Errorf("no media found")
+		return nil, errorNotFoundMedias
 	}
 	titlePrefix = strings.Trim(titlePrefix, titleSeparator)
 

@@ -554,3 +554,25 @@ func (c *OFAPI) GetUser(userEndpoint string) (model.User, error) {
 func (c *OFAPI) GetFileInfo(url string) (common.HttpFileInfo, error) {
 	return c.req.GetFileInfo(url)
 }
+
+func (c *OFAPI) IsSubscribed(userIdOrName any) bool {
+	subs, err := c.GetSubscriptions(SubscritionTypeActive)
+	if err != nil {
+		return false
+	}
+	user := fmt.Sprintf("%v", userIdOrName)
+	userName := user
+	userID, err := strconv.ParseInt(user, 10, 64)
+	if err == nil {
+		userName = ""
+	}
+	return slice.ContainBy(subs, func(sub model.Subscription) bool {
+		if sub.ID != 0 && sub.ID == userID {
+			return true
+		}
+		if sub.Username != "" && sub.Username == userName {
+			return true
+		}
+		return false
+	})
+}
