@@ -16,7 +16,7 @@ import (
 )
 
 var ErrorAuth = errors.New("need auth")
-var ErrorChangeAccount = fmt.Errorf("%w: %s", ErrorAuth, "try change login account")
+var errorChangeAccount = fmt.Errorf("%w: %s", ErrorAuth, "try change login account")
 
 type OFAPI struct {
 	req *Req
@@ -404,7 +404,7 @@ func (c *OFAPI) getUserPostsByEndPointAndTime(userID int64, endpoint string, mer
 	}
 	if err == nil {
 		if !c.IsSubscribed(userID) {
-			err = ErrorChangeAccount
+			err = errorChangeAccount
 		} else {
 			err = errors.New("no posts found or subscription expired")
 		}
