@@ -210,7 +210,10 @@ func (ie *OFIE) Test(url string, disableCache bool) {
 
 func (ie *OFIE) ExtractMedias(url string, option ExtractOption) (ret ExtractResult, err error) {
 	ret, err = ie.extractMedias(url, option)
-	if err != nil && ie.webview.IsEnable() && (errors.Is(err, ofapi.ErrorAuth) || errors.Is(err, errorNotFoundMedias)) {
+	if err != nil && ie.webview.IsEnable() &&
+		(errors.Is(err, ofapi.ErrorAuth) ||
+			errors.Is(err, errorNotFoundMedias) ||
+			errors.Is(err, ofapi.ErrorChangeAccount)) {
 		err = ie.AuthByWebview(true)
 		if err == nil {
 			ret, err = ie.extractMedias(url, option)
