@@ -83,3 +83,7 @@ func collectTitle(result *ExtractResult) {
 	}
 	result.Title = strings.Split(result.Medias[0].Title, titleSeparator)[0]
 }
+
+func is404Error(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "404")
+}
