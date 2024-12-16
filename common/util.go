@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/fileutil"
@@ -145,4 +146,8 @@ func ReadURIString(uri any) (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+func IsWindows() bool {
+	return strings.EqualFold(runtime.GOOS, "windows")
 }

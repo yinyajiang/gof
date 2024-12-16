@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/yinyajiang/gof"
+	"github.com/yinyajiang/gof/common"
 	"github.com/yinyajiang/webviewloader"
 )
 
@@ -82,8 +83,13 @@ func (w *WebView) Login() (LoginResult, error) {
 		return w.lastLoginResult, nil
 	}
 
+	ua := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+	if !common.IsWindows() {
+		ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15"
+	}
+
 	info, err := w.loader.Start(gof.OFPostDomain, webviewloader.WebviewOptions{
-		UA:           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+		UA:           ua,
 		Title:        w.config.Title,
 		Width:        w.config.Width,
 		Height:       w.config.Height,
