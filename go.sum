@@ -85,6 +85,10 @@ github.com/yinyajiang/webviewloader v0.0.0-20241212074901-88396c7bac67 h1:Za1knT
 github.com/yinyajiang/webviewloader v0.0.0-20241212074901-88396c7bac67/go.mod h1:8zahORTj8dTMnds0ZzMrC+KbH7Q8ZpFvmVg6UjmIuxc=
 github.com/yinyajiang/webviewloader v0.0.0-20241216071857-a311c05190e4 h1:yHOJTXCixN67PNUTyvnRMwSlG8jGza5f3nw2H7QLTDw=
 github.com/yinyajiang/webviewloader v0.0.0-20241216071857-a311c05190e4/go.mod h1:8zahORTj8dTMnds0ZzMrC+KbH7Q8ZpFvmVg6UjmIuxc=
+github.com/yinyajiang/webviewloader v0.0.0-20241216080019-9df2aa20f643 h1:1jC3gNo+0YbWpNbOLoLcgD9GyagvxudxBJqktRG+kEY=
+github.com/yinyajiang/webviewloader v0.0.0-20241216080019-9df2aa20f643/go.mod h1:8zahORTj8dTMnds0ZzMrC+KbH7Q8ZpFvmVg6UjmIuxc=
+github.com/yinyajiang/webviewloader v0.0.0-20241216082338-314208b6c79a h1:cP7V6/q+DvmJ60Pn3O6HUt3h9fYn09Dr2rEkQmyg1tk=
+github.com/yinyajiang/webviewloader v0.0.0-20241216082338-314208b6c79a/go.mod h1:8zahORTj8dTMnds0ZzMrC+KbH7Q8ZpFvmVg6UjmIuxc=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20210921155107-089bfa567519/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
