@@ -10,7 +10,7 @@ import (
 )
 
 type OFWebviewConfig struct {
-	WebviewConfig  webviewloader.Config
+	WebviewConfig  webviewloader.WebviewConfig
 	Title          string
 	Width          int
 	Height         int
@@ -18,7 +18,7 @@ type OFWebviewConfig struct {
 }
 
 type WebView struct {
-	loader          *webviewloader.Loader
+	loader          *webviewloader.WebView
 	config          OFWebviewConfig
 	lock            sync.Mutex
 	lastLoginResult LoginResult
@@ -39,7 +39,7 @@ func NewWebView(cfg OFWebviewConfig) *WebView {
 	}
 
 	return &WebView{
-		loader: webviewloader.New(cfg.WebviewConfig),
+		loader: webviewloader.NewWebview(cfg.WebviewConfig),
 		config: cfg,
 	}
 }
@@ -51,7 +51,7 @@ func (w *WebView) IsEnable() bool {
 func (w *WebView) Install(checkUpdate bool) error {
 	w.lock.Lock()
 	defer w.lock.Unlock()
-	return w.loader.InstallEnv(checkUpdate)
+	return w.loader.InstallEnv(checkUpdate, webviewloader.WebviewOptions{})
 }
 
 func (w *WebView) Check(checkUpdate bool) error {
