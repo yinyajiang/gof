@@ -31,7 +31,7 @@ require (
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	github.com/wailsapp/go-webview2 v1.0.18 // indirect
 	github.com/winlabs/gowin32 v0.0.0-20240930213947-f504d7e14639 // indirect
-	github.com/yinyajiang/webviewloader v0.0.0-20241225051829-4b83ebce4938 // indirect
+	github.com/yinyajiang/webviewloader v0.0.0-20241225061929-1136ee02bfcb // indirect
 	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.19.0 // indirect

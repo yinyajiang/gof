@@ -54,14 +54,14 @@ func (w *WebView) Install(checkUpdate bool) error {
 	return w.loader.InstallEnv(checkUpdate)
 }
 
-func (w *WebView) Check(checkUpdate bool) error {
+func (w *WebView) Check(checkUpdate, enableDownload bool) error {
 	w.lock.Lock()
 	defer w.lock.Unlock()
-	return w.loader.CheckEnv(checkUpdate)
+	return w.loader.CheckEnv(checkUpdate, enableDownload)
 }
 
 func (w *WebView) Login() (LoginResult, error) {
-	err := w.Check(false)
+	err := w.Check(false, false)
 	if err != nil {
 		err = w.Install(false)
 		if err != nil {
