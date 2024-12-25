@@ -51,7 +51,7 @@ func (w *WebView) IsEnable() bool {
 func (w *WebView) Install(checkUpdate bool) error {
 	w.lock.Lock()
 	defer w.lock.Unlock()
-	return w.loader.InstallEnv(checkUpdate, webviewloader.WebviewOptions{})
+	return w.loader.InstallEnv(checkUpdate)
 }
 
 func (w *WebView) Check(checkUpdate bool) error {
