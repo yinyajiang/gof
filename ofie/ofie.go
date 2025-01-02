@@ -107,6 +107,10 @@ func (ie *OFIE) OFDRM() *ofdrm.OFDRM {
 	return ie.drmapi
 }
 
+func (ie *OFIE) OFWebView() *ofwebview.WebView {
+	return ie.webview
+}
+
 func (ie *OFIE) Auth(authInfo ofapi.OFAuthInfo, check ...bool) error {
 	return ie.api.Auth(authInfo, check...)
 }

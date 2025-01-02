@@ -60,6 +60,10 @@ func (w *WebView) Check(checkUpdate, enableDownload bool) error {
 	return w.loader.CheckEnv(checkUpdate, enableDownload)
 }
 
+func (w *WebView) WebView() *webviewloader.WebView {
+	return w.loader
+}
+
 func (w *WebView) Login() (LoginResult, error) {
 	err := w.Check(false, false)
 	if err != nil {
