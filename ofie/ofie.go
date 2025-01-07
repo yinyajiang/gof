@@ -51,6 +51,11 @@ type OFIE struct {
 
 var errorNotFoundMedias = errors.New("no media found")
 
+func InstallOFWebView(cfg ofwebview.OFWebviewConfig, checkUpdate bool) error {
+	webview := ofwebview.NewWebView(cfg)
+	return webview.Install(checkUpdate)
+}
+
 func NewOFIE(config Config) (*OFIE, error) {
 	if config.OFApiConfig.ApiCacheDir == "" {
 		config.OFApiConfig.ApiCacheDir = path.Join(config.CacheDir, "of_apis")
