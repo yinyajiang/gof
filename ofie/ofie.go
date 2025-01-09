@@ -51,7 +51,10 @@ type OFIE struct {
 
 var errorNotFoundMedias = errors.New("no media found")
 
-func InstallOFWebView(cfg ofwebview.OFWebviewConfig, checkUpdate bool) error {
+func InstallOFWebView(cacheDir string, cfg ofwebview.OFWebviewConfig, checkUpdate bool) error {
+	if cfg.WebviewWorkDir == "" {
+		cfg.WebviewWorkDir = path.Join(cacheDir, "of_webview") //与下面的路径保持一致
+	}
 	webview := ofwebview.NewWebView(cfg)
 	return webview.Install(checkUpdate)
 }
@@ -64,7 +67,7 @@ func NewOFIE(config Config) (*OFIE, error) {
 		config.OFDRMConfig.WVDOption.WVDCacheDir = path.Join(config.CacheDir, "of_drms")
 	}
 	if config.OFWebViewConfig.WebviewWorkDir == "" {
-		config.OFWebViewConfig.WebviewWorkDir = path.Join(config.CacheDir, "of_webview")
+		config.OFWebViewConfig.WebviewWorkDir = path.Join(config.CacheDir, "of_webview") //与InstallOFWebView上面的路径保持一致
 	}
 	if config.WebViewAuthTryCount <= 0 {
 		config.WebViewAuthTryCount = 2
