@@ -7,7 +7,7 @@ require (
 	github.com/duke-git/lancet/v2 v2.3.3
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/iyear/gowidevine v0.1.1
-	github.com/yinyajiang/webviewloader v0.0.0-20250121015254-050f8431d27f
+	github.com/yinyajiang/webviewloader v0.0.0-20250121030413-6727d5318b0a
 	golang.org/x/exp v0.0.0-20221208152030-732eee02a75a
 )
 
