@@ -52,11 +52,16 @@ type OFIE struct {
 var errorNotFoundMedias = errors.New("no media found")
 
 func InstallOFWebView(cacheDir string, cfg ofwebview.OFWebviewConfig, checkUpdate bool) error {
+	webview := NewOFWebView(cacheDir, cfg)
+	return webview.Install(checkUpdate)
+}
+
+func NewOFWebView(cacheDir string, cfg ofwebview.OFWebviewConfig) *ofwebview.WebView {
 	if cfg.WebviewWorkDir == "" {
 		cfg.WebviewWorkDir = path.Join(cacheDir, "of_webview") //与下面的路径保持一致
 	}
 	webview := ofwebview.NewWebView(cfg)
-	return webview.Install(checkUpdate)
+	return webview
 }
 
 func NewOFIE(config Config) (*OFIE, error) {
