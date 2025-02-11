@@ -97,8 +97,10 @@ func (c *OFDRM) GetFileInfo(drm DRMInfo) (common.HttpFileInfo, error) {
 	return common.ParseHttpFileInfo(resp), nil
 }
 
+const publicCDRMProjectServer = "https://cdrm-project.com/api/decrypt"
+
 func (c *OFDRM) GetDecryptedKeyByServer(drm DRMInfo) (string, error) {
-	const fixedServerURL = "https://cdrm-project.com/"
+	const fixedServerURL = publicCDRMProjectServer
 
 	serverURLs := c.cdrmProjectServer
 	if !slice.Contain(serverURLs, fixedServerURL) {
@@ -121,15 +123,13 @@ func (c *OFDRM) GetDecryptedKeyByServer(drm DRMInfo) (string, error) {
 	return "", fmt.Errorf("all servers failed")
 }
 
-func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, drm DRMInfo) (string, error) {
+func (c *OFDRM) _getVideoDecryptedKeyByServer(serverURL, pssh, licurl string, headers map[string]string) (string, error) {
 	data := common.MustMarshalJSON(map[string]string{
-		"PSSH":        pssh,
-		"License URL": ofapi.ApiURL(c.drmURLPath(drm)),
-		"Headers":     common.MustUnmarshalJSONStr(c.req.SignedHeaders(c.drmURLPath(drm))),
-		"JSON":        "",
-		"Cookies":     "",
-		"Data":        "",
-		"Proxy":       "",
+		"pssh":    pssh,
+		"licurl":  licurl,
+		"headers": common.MustUnmarshalJSONStr(headers),
+		"cookies": "",
+		"data":    "",
 	})
 	req, err := http.NewRequest("POST", serverURL, io.NopCloser(bytes.NewReader(data)))
 	if err != nil {
@@ -141,20 +141,24 @@ func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, drm DRMInfo
 	if err != nil {
 		return "", err
 	}
-	content := string(body)
-	if strings.Contains(strings.ToLower(content), "error") {
-		return "", fmt.Errorf("failed to get decrypted key: %s", content)
-	}
 	var result map[string]any
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		return "", fmt.Errorf("parse response: %w", err)
+		return "", fmt.Errorf("parse response: %w, contnet:%s", err, string(body))
 	}
-	msg, ok := result["Message"]
+	if !strings.EqualFold(fmt.Sprint(result["status"]), "success") {
+		return "", fmt.Errorf("status: %s, contnet:%s", result["status"], string(body))
+	}
+
+	msg, ok := result["message"]
 	if !ok {
 		return "", fmt.Errorf("no message")
 	}
 	return strings.TrimSpace(msg.(string)), nil
+}
+
+func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, drm DRMInfo) (string, error) {
+	return c._getVideoDecryptedKeyByServer(serverURL, pssh, ofapi.ApiURL(c.drmURLPath(drm)), c.req.SignedHeaders(c.drmURLPath(drm)))
 }
 
 func (c *OFDRM) drmURLPath(drm DRMInfo) string {
