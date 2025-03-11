@@ -77,7 +77,6 @@ type Subscribe struct {
 	Price        any       `json:"price"`
 	RegularPrice any       `json:"regularPrice"`
 	Discount     int       `json:"discount"`
-	EarningID    int       `json:"earningId"`
 	Action       string    `json:"action"`
 	Type         string    `json:"type"`
 	OfferStart   any       `json:"offerStart"`
