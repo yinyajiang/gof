@@ -60,11 +60,19 @@ func (c *OFDRM) GetDecryptedKeyAuto(drm DRMInfo) (string, error) {
 		fmt.Println("failed to get decrypted key by client: ", clientErr)
 	}
 
-	key, serverErr := c.GetDecryptedKeyByServer(drm)
+	key, serverErr := c.GetDecryptedKeyCDMProject(drm)
 	if serverErr == nil {
 		return key, nil
+	} else {
+		fmt.Println("failed to get decrypted key by server: ", serverErr)
 	}
-	fmt.Println("failed to get decrypted key by server: ", serverErr)
+
+	key, oferr := c.GetDecryptedKeyByOFDL(drm)
+	if oferr == nil {
+		return key, nil
+	} else {
+		fmt.Println("failed to get decrypted key by ofdl: ", oferr)
+	}
 
 	if clientErr != nil {
 		return "", clientErr
@@ -99,7 +107,7 @@ func (c *OFDRM) GetFileInfo(drm DRMInfo) (common.HttpFileInfo, error) {
 
 const publicCDRMProjectServer = "https://cdrm-project.com/api/decrypt"
 
-func (c *OFDRM) GetDecryptedKeyByServer(drm DRMInfo) (string, error) {
+func (c *OFDRM) GetDecryptedKeyCDMProject(drm DRMInfo) (string, error) {
 	const fixedServerURL = publicCDRMProjectServer
 
 	serverURLs := c.cdrmProjectServer
@@ -114,7 +122,7 @@ func (c *OFDRM) GetDecryptedKeyByServer(drm DRMInfo) (string, error) {
 	maxAttempts := 30 * len(serverURLs)
 	for i := 0; i < maxAttempts; i++ {
 		serverURL := serverURLs[i%len(serverURLs)]
-		decryptedKey, err := c.getVideoDecryptedKeyByServer(serverURL, pssh, drm)
+		decryptedKey, err := c.getVideoDecryptedKeyByCDMProject(serverURL, pssh, drm)
 		if err == nil {
 			return decryptedKey, nil
 		}
@@ -123,7 +131,7 @@ func (c *OFDRM) GetDecryptedKeyByServer(drm DRMInfo) (string, error) {
 	return "", fmt.Errorf("all servers failed")
 }
 
-func (c *OFDRM) _getVideoDecryptedKeyByServer(serverURL, pssh, licurl string, headers map[string]string) (string, error) {
+func (c *OFDRM) _getVideoDecryptedKeyByCDMProject(serverURL, pssh, licurl string, headers map[string]string) (string, error) {
 	data := common.MustMarshalJSON(map[string]string{
 		"pssh":    pssh,
 		"licurl":  licurl,
@@ -157,8 +165,8 @@ func (c *OFDRM) _getVideoDecryptedKeyByServer(serverURL, pssh, licurl string, he
 	return strings.TrimSpace(msg.(string)), nil
 }
 
-func (c *OFDRM) getVideoDecryptedKeyByServer(serverURL, pssh string, drm DRMInfo) (string, error) {
-	return c._getVideoDecryptedKeyByServer(serverURL, pssh, ofapi.ApiURL(c.drmURLPath(drm)), c.req.SignedHeaders(c.drmURLPath(drm)))
+func (c *OFDRM) getVideoDecryptedKeyByCDMProject(serverURL, pssh string, drm DRMInfo) (string, error) {
+	return c._getVideoDecryptedKeyByCDMProject(serverURL, pssh, ofapi.ApiURL(c.drmURLPath(drm)), c.req.SignedHeaders(c.drmURLPath(drm)))
 }
 
 func (c *OFDRM) drmURLPath(drm DRMInfo) string {
@@ -243,7 +251,7 @@ func (c *OFDRM) loadWidevineServiceCert(urlpath string) (*widevinepb.DrmCertific
 	return cert, nil
 }
 
-func (c *OFDRM) HTTPHeaders(drm DRMInfo) map[string]string {
+func (c *OFDRM) DRMHTTPHeaders(drm DRMInfo) map[string]string {
 	return c.req.UnsignedHeaders(map[string]string{
 		"Cookie": fmt.Sprintf("CloudFront-Policy=%s; CloudFront-Signature=%s; CloudFront-Key-Pair-Id=%s",
 			drm.DRM.Signature.Dash.CloudFrontPolicy,
@@ -257,11 +265,38 @@ func (c *OFDRM) drmHttpGetResp(drm DRMInfo, readAll ...bool) (resp *http.Respons
 	if err != nil {
 		return nil, nil, err
 	}
-	common.AddHeaders(req, nil, c.HTTPHeaders(drm))
+	common.AddHeaders(req, nil, c.DRMHTTPHeaders(drm))
 	return common.HttpDo(req, readAll...)
 }
 
 func (c *OFDRM) drmHttpGet(drm DRMInfo) (body []byte, err error) {
 	_, body, err = c.drmHttpGetResp(drm, true)
 	return
+}
+
+func (c *OFDRM) GetDecryptedKeyByOFDL(drm DRMInfo) (string, error) {
+	pssh, err := c.getDRMPSSH(drm)
+	if err != nil {
+		return "", err
+	}
+	data := common.MustMarshalJSON(map[string]string{
+		"pssh":       pssh,
+		"licenceURL": ofapi.ApiURL(c.drmURLPath(drm)),
+		"headers":    common.MustUnmarshalJSONStr(c.req.SignedHeaders(c.drmURLPath(drm))),
+	})
+	req, err := http.NewRequest("POST", "https://ofdl.tools/WV", io.NopCloser(bytes.NewReader(data)))
+	if err != nil {
+		return "", fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	_, body, err := common.HttpDo(req, true)
+	if err != nil {
+		return "", err
+	}
+	dekey := strings.TrimSpace(string(body))
+	if strings.Contains(dekey, ":") {
+		return dekey, nil
+	}
+	return "", fmt.Errorf("invalid key: %s", dekey)
 }

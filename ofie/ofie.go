@@ -395,7 +395,7 @@ func (ie *OFIE) FetchDRMSecrets(mediaURI string, option FetchDRMSecretsOption) (
 	if err != nil {
 		return DRMSecrets{}, err
 	}
-	headers := ie.drmapi.HTTPHeaders(drminfo)
+	headers := ie.drmapi.DRMHTTPHeaders(drminfo)
 	secrets = cachedSecrets{
 		DecryptKey: decript,
 		Headers:    headers,

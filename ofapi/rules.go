@@ -38,7 +38,13 @@ func loadRules(cacheDir string, rulesURL []string) (rules, error) {
 	return latest, nil
 }
 
-func _isValidRules(rules rules) bool {
+func _isValidRules(rules *rules) bool {
+	if rules == nil {
+		return false
+	}
+	if rules.AppToken_Old != "" && rules.AppToken == "" {
+		rules.AppToken = rules.AppToken_Old
+	}
 	return rules.AppToken != "" &&
 		rules.ChecksumConstant != 0 &&
 		len(rules.ChecksumIndexes) > 0 &&
@@ -67,7 +73,7 @@ func _loadCachedRules(cacheDir string) (rules, error) {
 }
 
 func _loadURLRules(rulesURI []string) (rules, error) {
-	const fixURL = "https://raw.githubusercontent.com/deviint/onlyfans-dynamic-rules/main/dynamicRules.json"
+	const fixURL = "https://git.ofdl.tools/sim0n00ps/dynamic-rules/raw/branch/main/rules.json"
 
 	if len(rulesURI) == 0 {
 		rulesURI = []string{fixURL}
@@ -102,7 +108,7 @@ func _loadURLRules(rulesURI []string) (rules, error) {
 
 	ruleList := []rules{}
 	for _, item := range pruleList {
-		if item != nil && _isValidRules(*item) {
+		if item != nil && _isValidRules(item) {
 			ruleList = append(ruleList, *item)
 		}
 	}
@@ -120,7 +126,7 @@ func _selectLatestRules(rulesList []rules) rules {
 	var latestRules rules
 	var latestRevisionTime int64 = -1
 	for _, item := range rulesList {
-		if !_isValidRules(item) {
+		if !_isValidRules(&item) {
 			continue
 		}
 		if item.Revision == "" {

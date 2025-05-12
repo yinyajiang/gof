@@ -74,7 +74,8 @@ type UserIdentifier struct {
 }
 
 type rules struct {
-	AppToken         string `json:"app_token"`
+	AppToken         string `json:"app-token"`
+	AppToken_Old     string `json:"app_token"` //old config
 	ChecksumConstant int    `json:"checksum_constant"`
 	ChecksumIndexes  []int  `json:"checksum_indexes"`
 	Prefix           string `json:"prefix"`

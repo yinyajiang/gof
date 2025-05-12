@@ -6,7 +6,7 @@ import (
 
 func TestCDRMProject(t *testing.T) {
 	drm := &OFDRM{}
-	key, err := drm._getVideoDecryptedKeyByServer(publicCDRMProjectServer,
+	key, err := drm._getVideoDecryptedKeyByCDMProject(publicCDRMProjectServer,
 		"AAAAW3Bzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7QAAADsIARIQ62dqu8s0Xpa7z2FmMPGj2hoNd2lkZXZpbmVfdGVzdCIQZmtqM2xqYVNkZmFsa3IzaioCSEQyAA==",
 		"https://cwip-shaka-proxy.appspot.com/no_auth",
 		map[string]string{
